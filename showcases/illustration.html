@@ -76,10 +76,17 @@
     <button type="button" class="btn btn--secondary btn--sm" data-skin="dark-hc">Dark HC</button>
   </div>
 
-  <div class="alert alert--info" style="margin-bottom: var(--spacing-8);">
+  <div class="alert alert--info" style="margin-bottom: var(--spacing-5);">
     <div class="alert__content">
       <svg class="lexicon-icon"><use href="#info-circle"></use></svg>
       <p class="alert__text"><strong>Reduced motion:</strong> enable “Reduce motion” in your OS accessibility settings and every illustration below freezes on its first frame — natively, because the animation is page CSS rather than trapped inside the SVG.</p>
+    </div>
+  </div>
+
+  <div class="alert alert--warning" style="margin-bottom: var(--spacing-8);">
+    <div class="alert__content">
+      <svg class="lexicon-icon"><use href="#warning-full"></use></svg>
+      <p class="alert__text"><strong>Open question — high contrast:</strong> the illustrations currently reskin under the High Contrast skins too, but the resulting palette looks off — decorative art like this may be better left <em>out</em> of HC. Pending a decision, they might opt out of the <code>.light-hc</code> / <code>.dark-hc</code> skins. Feedback welcome.</p>
     </div>
   </div>
 
