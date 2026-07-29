@@ -278,35 +278,24 @@
   .illustration * { animation: none !important; }
 }
 
-/* HC opt-out — decorative art is exempt from the High Contrast skins.
-   The kit's HC palette collapses the primary scale (l0–l3 share one
-   flat tone, d1 = d2), which melts the art's tonal steps into blobs;
-   HC adds no accessibility here (no text, no information). Decision
-   from the PR #3 review: under .light-hc the art keeps the LIGHT
-   palette, under .dark-hc the DARK palette. The literals below mirror
-   --color-primary-* / --color-white from tokens.css and the .dark
-   block of tokens-dark.css — they must be restated as literals because
-   the skin class overrides those vars globally and this prototype is
-   self-contained. */
+/* Light HC adjustment — the art DOES reskin under the HC skins, but
+   the kit's current light-hc primary scale is degenerate (l0–l3 share
+   one flat tone, d1 = d2), which melts the art's tonal steps into
+   blobs. Dark HC is properly graded in the kit and needs no help.
+   The values below are the regenerated light-hc primary scale from
+   the canonical Figma High Contrast export (see PR #3), scoped to the
+   art only. Stated as literals because the skin class overrides these
+   vars globally and this prototype is self-contained; if the kit ever
+   adopts the regenerated HC palette, this block becomes redundant. */
 .light-hc .illustration {
-  --color-primary-d2: #004AD7;
-  --color-primary-d1: #0053F0;
-  --color-primary:    #0B5FFF;
-  --color-primary-l0: #5791FF;
-  --color-primary-l1: #80ACFF;
-  --color-primary-l2: #B3CDFF;
-  --color-primary-l3: #F0F5FF;
+  --color-primary-d2: #001133;
+  --color-primary-d1: #002161;
+  --color-primary:    #002875;
+  --color-primary-l0: #0058FF;
+  --color-primary-l1: #387DFF;
+  --color-primary-l2: #70A0FF;
+  --color-primary-l3: #F5F8FF;
   --color-white:      #FFFFFF;
-}
-.dark-hc .illustration {
-  --color-primary-d2: #D6E4FF;
-  --color-primary-d1: #7AA8FF;
-  --color-primary:    #6198FF;
-  --color-primary-l0: #0F62FF;
-  --color-primary-l1: #004CDB;
-  --color-primary-l2: #003AA8;
-  --color-primary-l3: #001A4D;
-  --color-white:      #1B1B23;
 }
   </style>
 </head>
