@@ -53,7 +53,12 @@
       --font-family-base: 'Source Sans Pro', 'Source Sans 3', -apple-system,
         BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       --sidebar-width: 280px;
-      --cp-chrome-h: calc(var(--spacing-10) + var(--spacing-3)); /* 56px */
+      /* Match the control-menu's *content band* so the panel-header contents
+         (title, theme/close) share the toggle's vertical centre. The bar is the
+         32px toggle (spacing-8) + 2×10px vertical padding (spacing-2 +
+         spacing-2-5) = 52px; its 1px bottom border sits below the centred
+         content, so it doesn't shift the centre. */
+      --cp-chrome-h: calc(var(--spacing-8) + 2 * (var(--spacing-2) + var(--spacing-2-5))); /* 52px */
     }
 
     /* Bigger, display-face titles: Site Builder (Control Menu) and
@@ -113,6 +118,11 @@
     /* 8px between the toggle and the "Site Builder" title (matches the side
        menu header's button→title gap). */
     .control-menu__left { gap: var(--spacing-3); }
+
+    /* 8px corners on the top-bar buttons, so the whole chrome shares the user
+       button / header-action radius. Radius only — the toggle's position stays
+       pinned for the pin/unpin effect. */
+    .control-menu__btn { border-radius: var(--rounded-lg); }
 
     /* ── One static toggle, content swaps by state ───────────────
        A single button paints above the floating panel (z-index) and never
@@ -232,6 +242,107 @@
       margin-left: calc(var(--sidebar-width) - var(--spacing-8));
     }
 
+    /* ── Pinned user footer ─────────────────────────────────────
+       Sibling of .control-panel__body inside the flex-column panel, so
+       it stays docked at the bottom while the nav list scrolls. Top
+       border echoes the panel's own right border. */
+    .control-panel__footer {
+      flex-shrink: 0;
+      padding: var(--spacing-3);
+      /* Sits above the scrolling body so its scroll shadow paints over the
+         list content, not under it. */
+      position: relative;
+      z-index: 1;
+      transition: box-shadow 150ms ease;
+    }
+    /* Scroll shadows — only while the body is clipped past that edge (classes
+       toggled in JS). The search is the true top edge of the fixed chrome (it
+       sits between the header and the list), so the downward shadow lives there
+       rather than on the header, where the opaque search box would hide it. */
+    .control-panel__search {
+      position: relative;
+      z-index: 1;
+      transition: box-shadow 150ms ease;
+    }
+    #control-panel.is-clipped-top .control-panel__search {
+      box-shadow: var(--shadow-scroll-top);
+    }
+    #control-panel.is-clipped-bottom .control-panel__footer {
+      box-shadow: var(--shadow-scroll-bottom);
+    }
+
+    /* Anchor for the upward-opening menu. */
+    .cp-user { position: relative; }
+
+    /* Borderless dropdown trigger: avatar + name + caret, full width. */
+    .cp-user__trigger {
+      align-items: center;
+      appearance: none;
+      background: none;
+      border: 0;
+      border-radius: var(--rounded-lg);
+      color: var(--color-dark);
+      cursor: pointer;
+      /* Inline-flex → the button hugs its content (avatar + name + caret)
+         instead of stretching across the footer. */
+      display: inline-flex;
+      font-family: var(--font-family-base);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semi);
+      /* Mirror a nav item's rail: 8px footer pad + 8px trigger pad = 16px, so
+         the 24px avatar sits exactly on the item icon-box (16–40px); an 8px gap
+         then lands the name at 48px, on the item-label column. */
+      gap: var(--spacing-3);
+      padding: var(--spacing-3);
+      text-align: left;
+    }
+    .cp-user__trigger:hover { background: var(--color-light); }
+    /* Menu open → the trigger stays "marked", using the same soft tint as the
+       pinned menu toggle (8% of --color-dark, so it flips per skin). */
+    .cp-user.is-open .cp-user__trigger {
+      background: color-mix(in srgb, var(--color-dark) 8%, transparent);
+    }
+
+    .cp-user__avatar {
+      border-radius: var(--rounded-full);
+      flex-shrink: 0;
+      height: var(--spacing-7);
+      overflow: hidden;
+      width: var(--spacing-7);
+    }
+    .cp-user__avatar > img {
+      display: block;
+      height: 100%;
+      object-fit: cover;
+      width: 100%;
+    }
+
+    .cp-user__name {
+      white-space: nowrap;
+    }
+
+    /* Caret rests pointing down; flips up while the menu is open. */
+    .cp-user__caret {
+      color: var(--color-secondary-l0);
+      flex-shrink: 0;
+      transition: transform 150ms ease;
+    }
+    .cp-user__trigger[aria-expanded="true"] .cp-user__caret { transform: rotate(180deg); }
+
+    /* Menu opens upward from the footer, spanning the panel width. Capped
+       height keeps it inside tall panels; the list scrolls if it overflows. */
+    .cp-user__menu {
+      position: absolute;
+      bottom: calc(100% + var(--spacing-2));
+      left: 0;
+      right: 0;
+      max-height: 70vh;
+      overflow-y: auto;
+      border-radius: var(--rounded-lg);
+      z-index: 30;
+    }
+    .cp-user:not(.is-open) .cp-user__menu { display: none; }
+
     /* ── Compact chrome breakpoint ──────────────────────────────
        The kit already compacts .control-menu to 48px at ≤767px
        (components.css). We match that here by dropping --cp-chrome-h
@@ -241,7 +352,9 @@
        panel BODY (items, indent, gaps, icons, typography) stays
        identical at both sizes. */
     @media (max-width: 767px) {
-      :root { --cp-chrome-h: var(--spacing-10); } /* 48px */
+      /* Compact control-menu padding drops to 6px (spacing-2-5), so the band
+         is 32 + 2×6 = 44px — keep the header locked to it. */
+      :root { --cp-chrome-h: calc(var(--spacing-8) + 2 * var(--spacing-2-5)); } /* 44px */
 
       /* Tighter side padding on the top bar than the kit default (12 → 8)
          so the toggle sits closer to the viewport edge on narrow screens. */
@@ -298,6 +411,9 @@
       gap: var(--spacing-2);
       margin-left: auto;
     }
+    /* 8px corners on the header action buttons (theme / close), matching the
+       user button and the dropdown menu. */
+    .control-panel__actions .btn { border-radius: var(--rounded-lg); }
 
     /* Close button: behaves like Bootstrap's visually-hidden-focusable.
        While it lacks keyboard focus it is pulled out of flow (position:
@@ -383,12 +499,11 @@
     <span class="control-menu__title">Home</span>
   </div>
   <div class="control-menu__right">
+    <!-- User portrait moved out of the top bar → it now lives in the Control
+         Panel footer as a borderless dropdown trigger (see .cp-user below). -->
     <button class="control-menu__btn" type="button" aria-label="Global navigation">
       <svg class="lexicon-icon"><use href="#grid"></use></svg>
     </button>
-    <div class="control-menu__avatar">
-      <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=72&h=72&fit=crop&auto=format" alt="User avatar">
-    </div>
   </div>
 </div>
 
@@ -608,6 +723,76 @@
     </ul>
   </div><!-- /control-panel__body -->
 
+  <!-- ─── Pinned footer: user menu ─────────────────────────────────
+       The portrait that used to live in the Control Menu top-bar now
+       docks here as a borderless dropdown trigger. Clicking it opens the
+       personal user menu upward (the panel's bottom edge). -->
+  <div class="control-panel__footer">
+    <div class="cp-user">
+      <button class="cp-user__trigger" id="cp-user-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="cp-user-menu">
+        <span class="cp-user__avatar">
+          <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=72&h=72&fit=crop&auto=format" alt="">
+        </span>
+        <span class="cp-user__name">Lukas Kyle</span>
+        <svg class="lexicon-icon lexicon-icon-sm cp-user__caret"><use href="#caret-bottom"></use></svg>
+      </button>
+
+      <ul class="dropdown cp-user__menu" id="cp-user-menu" role="menu" aria-labelledby="cp-user-trigger">
+        <li class="dropdown__group-title" role="presentation">Lukas Kyle</li>
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">My Sites</span>
+          <svg class="lexicon-icon dropdown__item-meta"><use href="#sites"></use></svg>
+        </button></li>
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">My CMS Homepage</span>
+        </button></li>
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">My Profile</span>
+        </button></li>
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">My Dashboard</span>
+        </button></li>
+
+        <li class="dropdown__divider" role="separator"></li>
+
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">Notifications</span>
+          <svg class="lexicon-icon dropdown__item-meta" aria-label="Unread"><use href="#simple-circle"></use></svg>
+        </button></li>
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">Shared Content</span>
+        </button></li>
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">My Submissions</span>
+        </button></li>
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">My Workflow Tasks</span>
+        </button></li>
+
+        <li class="dropdown__divider" role="separator"></li>
+
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">Account Settings</span>
+        </button></li>
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">My Connected Applications</span>
+        </button></li>
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">My Organizations</span>
+        </button></li>
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">My Subscriptions</span>
+        </button></li>
+
+        <li class="dropdown__divider" role="separator"></li>
+
+        <li><button class="dropdown__item" type="button" role="menuitem">
+          <span class="dropdown__item-text">Sign Out</span>
+        </button></li>
+      </ul>
+    </div>
+  </div><!-- /control-panel__footer -->
+
 </aside>
 
 <!-- ─── Page content ──────────────────────────────────────────────── -->
@@ -687,6 +872,9 @@
     function peek(on) {
       if (pinned()) return;
       body.classList.toggle('sb-peek', on);
+      // Retracting an unpinned (hover) panel resets any transient state inside
+      // it — e.g. an open user menu — so the next peek starts from default.
+      if (!on) document.dispatchEvent(new CustomEvent('cp:panel-collapsed'));
     }
 
     // Small grace period so the pointer can travel toggle → panel
@@ -801,6 +989,72 @@
     });
 
     render();
+  })();
+</script>
+
+<!-- User menu — open upward from the footer trigger, close on outside click / Esc -->
+<script>
+  (function () {
+    var wrap = document.querySelector('.cp-user');
+    var trigger = document.getElementById('cp-user-trigger');
+    if (!wrap || !trigger) return;
+
+    function open() { return wrap.classList.contains('is-open'); }
+
+    function setOpen(on) {
+      wrap.classList.toggle('is-open', on);
+      trigger.setAttribute('aria-expanded', String(on));
+    }
+
+    trigger.addEventListener('click', function () { setOpen(!open()); });
+
+    // Outside click closes the menu.
+    document.addEventListener('click', function (e) {
+      if (open() && !wrap.contains(e.target)) setOpen(false);
+    });
+
+    // Esc closes and returns focus to the trigger.
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && open()) { setOpen(false); trigger.focus(); }
+    });
+
+    // Selecting a menu item closes the menu (prototype: no navigation).
+    wrap.querySelectorAll('.dropdown__item').forEach(function (item) {
+      item.addEventListener('click', function () { setOpen(false); });
+    });
+
+    // An unpinned panel retracting (hover-out / Esc) resets the menu to
+    // default, so re-peeking never surfaces a stale open menu.
+    document.addEventListener('cp:panel-collapsed', function () { setOpen(false); });
+  })();
+</script>
+
+<!-- Scroll shadows — reveal the header/footer edge shadow only while the nav
+     list is clipped past that edge (clean when everything fits). -->
+<script>
+  (function () {
+    var panel = document.getElementById('control-panel');
+    var body = panel && panel.querySelector('.control-panel__body');
+    if (!body) return;
+
+    function update() {
+      // 1px slack absorbs sub-pixel rounding at the extremes.
+      var clippedTop = body.scrollTop > 1;
+      var clippedBottom = body.scrollTop + body.clientHeight < body.scrollHeight - 1;
+      panel.classList.toggle('is-clipped-top', clippedTop);
+      panel.classList.toggle('is-clipped-bottom', clippedBottom);
+    }
+
+    body.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+
+    // Expanding / collapsing a group changes the scrollable height.
+    if (window.ResizeObserver) {
+      var groups = body.querySelector('.control-panel__groups');
+      if (groups) new ResizeObserver(update).observe(groups);
+    }
+
+    update();
   })();
 </script>
 
