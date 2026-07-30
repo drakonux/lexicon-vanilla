@@ -258,11 +258,11 @@
       font-family: var(--font-family-base);
       font-size: var(--font-size-base);
       font-weight: var(--font-weight-semi);
-      /* Avatar (32px) centers on the nav-icon column: 8px footer pad + 4px
-         trigger pad = 12px left edge → centre at 28px, same axis as the item
-         icons. 4px gap then lands the name at 48px, on the item-label column. */
-      gap: var(--spacing-2);
-      padding: var(--spacing-2);
+      /* Mirror a nav item's rail: 8px footer pad + 8px trigger pad = 16px, so
+         the 24px avatar sits exactly on the item icon-box (16–40px); an 8px gap
+         then lands the name at 48px, on the item-label column. */
+      gap: var(--spacing-3);
+      padding: var(--spacing-3);
       text-align: left;
       width: 100%;
     }
@@ -271,9 +271,9 @@
     .cp-user__avatar {
       border-radius: var(--rounded-full);
       flex-shrink: 0;
-      height: var(--spacing-8);
+      height: var(--spacing-7);
       overflow: hidden;
-      width: var(--spacing-8);
+      width: var(--spacing-7);
     }
     .cp-user__avatar > img {
       display: block;
