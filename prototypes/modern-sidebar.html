@@ -53,7 +53,12 @@
       --font-family-base: 'Source Sans Pro', 'Source Sans 3', -apple-system,
         BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       --sidebar-width: 280px;
-      --cp-chrome-h: calc(var(--spacing-10) + var(--spacing-3)); /* 56px */
+      /* Match the control-menu's *content band* so the panel-header contents
+         (title, theme/close) share the toggle's vertical centre. The bar is the
+         32px toggle (spacing-8) + 2×10px vertical padding (spacing-2 +
+         spacing-2-5) = 52px; its 1px bottom border sits below the centred
+         content, so it doesn't shift the centre. */
+      --cp-chrome-h: calc(var(--spacing-8) + 2 * (var(--spacing-2) + var(--spacing-2-5))); /* 52px */
     }
 
     /* Bigger, display-face titles: Site Builder (Control Menu) and
@@ -113,6 +118,11 @@
     /* 8px between the toggle and the "Site Builder" title (matches the side
        menu header's button→title gap). */
     .control-menu__left { gap: var(--spacing-3); }
+
+    /* 8px corners on the top-bar buttons, so the whole chrome shares the user
+       button / header-action radius. Radius only — the toggle's position stays
+       pinned for the pin/unpin effect. */
+    .control-menu__btn { border-radius: var(--rounded-lg); }
 
     /* ── One static toggle, content swaps by state ───────────────
        A single button paints above the floating panel (z-index) and never
@@ -251,7 +261,7 @@
       appearance: none;
       background: none;
       border: 0;
-      border-radius: var(--rounded-md);
+      border-radius: var(--rounded-lg);
       color: var(--color-dark);
       cursor: pointer;
       /* Inline-flex → the button hugs its content (avatar + name + caret)
@@ -309,19 +319,10 @@
       right: 0;
       max-height: 70vh;
       overflow-y: auto;
+      border-radius: var(--rounded-lg);
       z-index: 30;
     }
     .cp-user:not(.is-open) .cp-user__menu { display: none; }
-
-    /* Unread indicator dot pinned to the row's right edge (mirrors the image). */
-    .cp-user__dot {
-      background: var(--color-primary);
-      border-radius: var(--rounded-full);
-      flex-shrink: 0;
-      height: var(--spacing-2);
-      margin-left: auto;
-      width: var(--spacing-2);
-    }
 
     /* ── Compact chrome breakpoint ──────────────────────────────
        The kit already compacts .control-menu to 48px at ≤767px
@@ -332,7 +333,9 @@
        panel BODY (items, indent, gaps, icons, typography) stays
        identical at both sizes. */
     @media (max-width: 767px) {
-      :root { --cp-chrome-h: var(--spacing-10); } /* 48px */
+      /* Compact control-menu padding drops to 6px (spacing-2-5), so the band
+         is 32 + 2×6 = 44px — keep the header locked to it. */
+      :root { --cp-chrome-h: calc(var(--spacing-8) + 2 * var(--spacing-2-5)); } /* 44px */
 
       /* Tighter side padding on the top bar than the kit default (12 → 8)
          so the toggle sits closer to the viewport edge on narrow screens. */
@@ -389,6 +392,9 @@
       gap: var(--spacing-2);
       margin-left: auto;
     }
+    /* 8px corners on the header action buttons (theme / close), matching the
+       user button and the dropdown menu. */
+    .control-panel__actions .btn { border-radius: var(--rounded-lg); }
 
     /* Close button: behaves like Bootstrap's visually-hidden-focusable.
        While it lacks keyboard focus it is pulled out of flow (position:
@@ -732,7 +738,7 @@
 
         <li><button class="dropdown__item" type="button" role="menuitem">
           <span class="dropdown__item-text">Notifications</span>
-          <span class="cp-user__dot" aria-label="Unread"></span>
+          <svg class="lexicon-icon dropdown__item-meta" aria-label="Unread"><use href="#simple-circle"></use></svg>
         </button></li>
         <li><button class="dropdown__item" type="button" role="menuitem">
           <span class="dropdown__item-text">Shared Content</span>
@@ -762,7 +768,6 @@
         <li class="dropdown__divider" role="separator"></li>
 
         <li><button class="dropdown__item" type="button" role="menuitem">
-          <svg class="lexicon-icon dropdown__item-icon"><use href="#logout"></use></svg>
           <span class="dropdown__item-text">Sign Out</span>
         </button></li>
       </ul>
