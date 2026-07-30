@@ -254,7 +254,9 @@
       border-radius: var(--rounded-md);
       color: var(--color-dark);
       cursor: pointer;
-      display: flex;
+      /* Inline-flex → the button hugs its content (avatar + name + caret)
+         instead of stretching across the footer. */
+      display: inline-flex;
       font-family: var(--font-family-base);
       font-size: var(--font-size-base);
       font-weight: var(--font-weight-semi);
@@ -264,9 +266,10 @@
       gap: var(--spacing-3);
       padding: var(--spacing-3);
       text-align: left;
-      width: 100%;
     }
     .cp-user__trigger:hover { background: var(--color-light); }
+    /* Menu open → the trigger stays visually active. */
+    .cp-user.is-open .cp-user__trigger { background: var(--color-light); }
 
     .cp-user__avatar {
       border-radius: var(--rounded-full);
@@ -283,10 +286,6 @@
     }
 
     .cp-user__name {
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
@@ -846,6 +845,9 @@
     function peek(on) {
       if (pinned()) return;
       body.classList.toggle('sb-peek', on);
+      // Retracting an unpinned (hover) panel resets any transient state inside
+      // it — e.g. an open user menu — so the next peek starts from default.
+      if (!on) document.dispatchEvent(new CustomEvent('cp:panel-collapsed'));
     }
 
     // Small grace period so the pointer can travel toggle → panel
@@ -993,6 +995,10 @@
     wrap.querySelectorAll('.dropdown__item').forEach(function (item) {
       item.addEventListener('click', function () { setOpen(false); });
     });
+
+    // An unpinned panel retracting (hover-out / Esc) resets the menu to
+    // default, so re-peeking never surfaces a stale open menu.
+    document.addEventListener('cp:panel-collapsed', function () { setOpen(false); });
   })();
 </script>
 
