@@ -103,6 +103,10 @@
   --shadow-dropdown:   0 4px 8px rgba(39, 40, 51, 0.12);
   --shadow-lg:         0 4px 16px rgba(39, 40, 51, 0.18);
   --shadow-alert:      0 8px 16px rgba(39, 40, 51, 0.20);
+  /* Scroll shadows — a soft edge cast by sticky chrome (header / footer) over
+     scrolling content, shown only while content is clipped past that edge. */
+  --shadow-scroll-top:    0 4px 24px rgba(0, 0, 0, 0.08);
+  --shadow-scroll-bottom: 0 -4px 24px rgba(0, 0, 0, 0.08);
 
   /* ── Focus ring ── */
   --focus-ring: 0 0 0 2px var(--color-white), 0 0 0 4px var(--color-primary-l0);

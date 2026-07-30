@@ -247,9 +247,28 @@
        it stays docked at the bottom while the nav list scrolls. Top
        border echoes the panel's own right border. */
     .control-panel__footer {
-      border-top: 1px solid var(--color-secondary-l2);
       flex-shrink: 0;
       padding: var(--spacing-3);
+      /* Sits above the scrolling body so its scroll shadow paints over the
+         list content, not under it. */
+      position: relative;
+      z-index: 1;
+      transition: box-shadow 150ms ease;
+    }
+    /* Scroll shadows — only while the body is clipped past that edge (classes
+       toggled in JS). The search is the true top edge of the fixed chrome (it
+       sits between the header and the list), so the downward shadow lives there
+       rather than on the header, where the opaque search box would hide it. */
+    .control-panel__search {
+      position: relative;
+      z-index: 1;
+      transition: box-shadow 150ms ease;
+    }
+    #control-panel.is-clipped-top .control-panel__search {
+      box-shadow: var(--shadow-scroll-top);
+    }
+    #control-panel.is-clipped-bottom .control-panel__footer {
+      box-shadow: var(--shadow-scroll-bottom);
     }
 
     /* Anchor for the upward-opening menu. */
@@ -1007,6 +1026,35 @@
     // An unpinned panel retracting (hover-out / Esc) resets the menu to
     // default, so re-peeking never surfaces a stale open menu.
     document.addEventListener('cp:panel-collapsed', function () { setOpen(false); });
+  })();
+</script>
+
+<!-- Scroll shadows — reveal the header/footer edge shadow only while the nav
+     list is clipped past that edge (clean when everything fits). -->
+<script>
+  (function () {
+    var panel = document.getElementById('control-panel');
+    var body = panel && panel.querySelector('.control-panel__body');
+    if (!body) return;
+
+    function update() {
+      // 1px slack absorbs sub-pixel rounding at the extremes.
+      var clippedTop = body.scrollTop > 1;
+      var clippedBottom = body.scrollTop + body.clientHeight < body.scrollHeight - 1;
+      panel.classList.toggle('is-clipped-top', clippedTop);
+      panel.classList.toggle('is-clipped-bottom', clippedBottom);
+    }
+
+    body.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+
+    // Expanding / collapsing a group changes the scrollable height.
+    if (window.ResizeObserver) {
+      var groups = body.querySelector('.control-panel__groups');
+      if (groups) new ResizeObserver(update).observe(groups);
+    }
+
+    update();
   })();
 </script>
 
