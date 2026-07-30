@@ -239,7 +239,7 @@
     .control-panel__footer {
       border-top: 1px solid var(--color-secondary-l2);
       flex-shrink: 0;
-      padding: var(--spacing-3) var(--spacing-4);
+      padding: var(--spacing-3);
     }
 
     /* Anchor for the upward-opening menu. */
@@ -258,8 +258,11 @@
       font-family: var(--font-family-base);
       font-size: var(--font-size-base);
       font-weight: var(--font-weight-semi);
-      gap: var(--spacing-3);
-      padding: var(--spacing-2) var(--spacing-3);
+      /* Avatar (32px) centers on the nav-icon column: 8px footer pad + 4px
+         trigger pad = 12px left edge → centre at 28px, same axis as the item
+         icons. 4px gap then lands the name at 48px, on the item-label column. */
+      gap: var(--spacing-2);
+      padding: var(--spacing-2);
       text-align: left;
       width: 100%;
     }
