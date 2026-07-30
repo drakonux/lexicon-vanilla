@@ -268,8 +268,11 @@
       text-align: left;
     }
     .cp-user__trigger:hover { background: var(--color-light); }
-    /* Menu open → the trigger stays visually active. */
-    .cp-user.is-open .cp-user__trigger { background: var(--color-light); }
+    /* Menu open → the trigger stays "marked", using the same soft tint as the
+       pinned menu toggle (8% of --color-dark, so it flips per skin). */
+    .cp-user.is-open .cp-user__trigger {
+      background: color-mix(in srgb, var(--color-dark) 8%, transparent);
+    }
 
     .cp-user__avatar {
       border-radius: var(--rounded-full);
