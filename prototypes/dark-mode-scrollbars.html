@@ -20,15 +20,20 @@ body { margin: 0; background: var(--color-light); color: var(--color-dark);
   max-width: 1400px; margin: 0 auto; }
 
 /* ── Toolbar ─────────────────────────────────────────────── */
-.sb-bar { display: flex; align-items: center; gap: var(--spacing-6); flex-wrap: wrap;
+.sb-bar { display: flex; flex-direction: column; gap: var(--spacing-4);
   padding: var(--spacing-4) var(--spacing-5); background: var(--color-white);
   border: 1px solid var(--color-secondary-l3); border-radius: var(--rounded-lg);
   position: sticky; top: 0; z-index: 30; box-shadow: var(--shadow-sm); }
-.sb-bar__group { display: flex; align-items: center; gap: var(--spacing-3); flex-wrap: wrap; }
+.sb-bar__row { display: flex; align-items: center; gap: var(--spacing-6); flex-wrap: wrap; }
+.sb-bar__row + .sb-bar__row { border-top: 1px solid var(--color-secondary-l3);
+  padding-top: var(--spacing-4); }
+.sb-bar__group { display: flex; align-items: center; gap: var(--spacing-3); }
 .sb-bar__label { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold);
-  color: var(--color-secondary); }
-.sb-bar__sep { width: 1px; align-self: stretch; background: var(--color-secondary-l3); }
-.sb-bar__spacer { flex: 1 1 auto; }
+  color: var(--color-secondary); white-space: nowrap; }
+.sb-bar__group.is-off { opacity: .45; pointer-events: none; }
+.sb-bar__why { font-size: var(--font-size-sm); color: var(--color-secondary);
+  margin-left: auto; text-align: right; max-width: 44ch; line-height: 1.5; }
+.sb-bar__why strong { color: var(--color-dark); font-weight: var(--font-weight-bold); }
 
 .sb-chips { display: flex; gap: var(--spacing-2); flex-wrap: wrap; }
 .sb-chip { appearance: none; border: 1px solid var(--color-secondary-l2); background: transparent;
@@ -40,10 +45,9 @@ body { margin: 0; background: var(--color-light); color: var(--color-dark);
 .sb-chip.is-active { background: var(--color-primary); border-color: var(--color-primary);
   color: var(--color-white); font-weight: var(--font-weight-bold); }
 
-.sb-select { width: 96px; height: 32px; padding: 0 var(--spacing-3); font-size: var(--font-size-sm); }
-.sb-range { width: 108px; accent-color: var(--color-primary); }
+.sb-range { width: 104px; accent-color: var(--color-primary); }
 .sb-readout { font-size: var(--font-size-sm); color: var(--color-secondary); white-space: nowrap;
-  min-width: 38px; }
+  min-width: 38px; font-variant-numeric: tabular-nums; }
 
 /* ── Sections ────────────────────────────────────────────── */
 .sb-section { display: flex; flex-direction: column; gap: var(--spacing-6); }
@@ -72,7 +76,10 @@ body { margin: 0; background: var(--color-light); color: var(--color-dark);
 .sb-swatch--empty { background: transparent; border-style: dashed; }
 .sb-verdict { margin-left: auto; font-weight: var(--font-weight-bold); }
 
-.sb-box { height: 200px; overflow-y: auto; padding: var(--spacing-5); }
+/* Heights are deliberately shorter than the copy they hold. A wide
+   single column swallows a couple of paragraphs, and a box that does not
+   overflow has no scrollbar in it — which is the whole point of the page. */
+.sb-box { height: 152px; overflow-y: auto; padding: var(--spacing-5); }
 .sb-box p { margin: 0 0 var(--spacing-4); font-size: var(--font-size-sm); line-height: 1.6;
   color: var(--color-dark); }
 .sb-box p:last-child { margin-bottom: 0; }
@@ -88,7 +95,7 @@ body { margin: 0; background: var(--color-light); color: var(--color-dark);
   border-radius: var(--rounded-lg); overflow: hidden; }
 .sb-surfaces > * { border-right: 1px solid var(--color-secondary-l3); }
 .sb-surfaces > *:last-child { border-right: 0; }
-.sb-surf { height: 156px; overflow-y: auto; padding: var(--spacing-4); }
+.sb-surf { height: 96px; overflow-y: auto; padding: var(--spacing-4); }
 .sb-surf__tag { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold);
   color: var(--color-secondary); display: block; margin-bottom: var(--spacing-3); }
 .sb-surf__tag em { font-style: normal; font-weight: var(--font-weight-normal);
@@ -98,26 +105,31 @@ body { margin: 0; background: var(--color-light); color: var(--color-dark);
 .sb-surf--light { background: var(--color-light); }
 .sb-surf p { margin: 0 0 var(--spacing-3); font-size: var(--font-size-sm); line-height: 1.55; }
 
-/* ── Real contexts ───────────────────────────────────────── */
-.sb-ctx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: var(--spacing-7); align-items: start; }
-.sb-ctx { display: flex; flex-direction: column; gap: var(--spacing-4); min-width: 0; }
+/* ── Real contexts ───────────────────────────────────────────
+   Every frame is the same height and every shell fills it, so the
+   thumbs line up across contexts and can be compared in one sweep
+   instead of hunting for them at different heights. */
+.sb-ctx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-6); }
+.sb-ctx { display: flex; flex-direction: column; gap: var(--spacing-3); min-width: 0; }
 .sb-ctx__label { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold);
   color: var(--color-dark); }
 .sb-ctx__frame { background: var(--color-light); border: 1px solid var(--color-secondary-l3);
-  border-radius: var(--rounded-lg); padding: var(--spacing-5); display: flex; justify-content: center; }
+  border-radius: var(--rounded-lg); padding: var(--spacing-5);
+  height: 264px; display: flex; align-items: stretch; }
+.sb-ctx__frame > * { width: 100%; min-width: 0; }
 
-.sb-nav-shell { width: 100%; max-width: 264px; background: var(--color-white);
+.sb-nav-shell { background: var(--color-white);
   border: 1px solid var(--color-secondary-l3); border-radius: var(--rounded-md);
-  height: 300px; overflow-y: auto; }
-.sb-modal-shell { width: 100%; max-width: 420px; }
-.sb-modal-shell .modal__body { max-height: 200px; overflow-y: auto; }
-.sb-table-wrap { width: 100%; overflow-x: auto; background: var(--color-white);
+  overflow-y: auto; }
+.sb-modal-shell { display: flex; }
+.sb-modal-shell .modal { width: 100%; display: flex; flex-direction: column; }
+.sb-modal-shell .modal__body { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
+.sb-table-wrap { overflow: auto; background: var(--color-white);
   border: 1px solid var(--color-secondary-l3); border-radius: var(--rounded-md); }
 .sb-table-wrap .table { min-width: 740px; margin: 0; }
-.sb-drop-shell { width: 100%; max-width: 260px; }
-.sb-drop-shell .dropdown { max-height: 220px; overflow-y: auto; }
-.sb-ta { width: 100%; height: 190px; resize: none; }
+.sb-drop-shell.dropdown { overflow-y: auto; margin: 0; }
+.sb-ta { height: 100%; resize: none; }
 
 /* ── Numbers table ───────────────────────────────────────── */
 .sb-tablewrap { background: var(--color-white); border: 1px solid var(--color-secondary-l3);
@@ -170,7 +182,16 @@ table.sb-data code { background: transparent; padding: 0; }
    track. No opacities and no colour mixing — just steps of the
    semantic ramp, which already inverts per theme.
    ============================================================ */
-[data-sb] { --sb-size: 12px; --sb-radius: var(--rounded-full); }
+/* Shape lives on :root, so the toolbar can override it by writing the
+   variable there and every box inherits it. Declared on [data-sb]
+   instead — as it was — each box redeclares its own copy, which beats
+   the inherited value, and the sliders end up moving nothing but the
+   page's own scrollbar. */
+:root {
+  --sb-size: 12px;
+  --sb-inset: 2px;
+  --sb-radius: var(--rounded-full);
+}
 
 /* native — carries no --sb-* at all; every rule below excludes it
    by selector, so the browser paints its own. */
@@ -200,18 +221,43 @@ table.sb-data code { background: transparent; padding: 0; }
   --sb-thumb-active: var(--color-secondary);
 }
 
-/* Painting. Chrome, Safari and Edge; in Firefox the thumb comes
-   out at system thickness but with the same two colours. */
-[data-sb]:not([data-sb="native"])::-webkit-scrollbar {
-  width: var(--sb-size); height: var(--sb-size);
-}
+/* Track, overridden independently of the option, to test whether one
+   is needed at all. Two attribute selectors, so it beats the pair. */
+[data-sb][data-track="none"]  { --sb-track: transparent; }
+[data-sb][data-track="panel"] { --sb-track: var(--color-light); }
+
+/* ── Painting ─────────────────────────────────────────────────
+   Chrome, Safari and Edge. Measured in Chromium 148 as
+   offsetWidth − clientWidth, one scrolling box per case:
+
+     thumb colour ....................... 0px reserved
+     track colour ....................... 0px
+     thumb :hover ....................... 0px
+     thumb inset + corner radius ........ 0px
+     scrollbar-width: thin .............. 0px
+     ::-webkit-scrollbar { width: 12px }  12px
+     ::-webkit-scrollbar { background }   16px
+
+   Only a rule on ::-webkit-scrollbar — the container — takes the
+   element out of the system's overlay behaviour: the scrollbar stops
+   fading out when you rest and starts eating width from the content.
+   Everything we actually want to design (colour, hover, inset,
+   corners) leaves that preference intact.
+
+   So thickness is the one control that costs the user's choice, and
+   it is the only thing gated behind [data-sb-mode="fixed"]. Two
+   selectors per rule because <html> carries the page's own scrollbar
+   and is not a descendant of itself.
+   ───────────────────────────────────────────────────────────── */
+
+/* Colour and shape — apply in both behaviours. */
 [data-sb]:not([data-sb="native"])::-webkit-scrollbar-track {
   background: var(--sb-track);
 }
 [data-sb]:not([data-sb="native"])::-webkit-scrollbar-thumb {
   background: var(--sb-thumb);
   border-radius: var(--sb-radius);
-  border: 2px solid transparent;
+  border: var(--sb-inset) solid transparent;
   background-clip: padding-box;
 }
 [data-sb]:not([data-sb="native"])::-webkit-scrollbar-thumb:hover {
@@ -220,14 +266,27 @@ table.sb-data code { background: transparent; padding: 0; }
 [data-sb]:not([data-sb="native"])::-webkit-scrollbar-thumb:active {
   background: var(--sb-thumb-active); background-clip: padding-box;
 }
-[data-sb]:not([data-sb="native"])::-webkit-scrollbar-corner {
+
+/* Thickness — always-visible behaviour only. */
+:root[data-sb-mode="fixed"] [data-sb]:not([data-sb="native"])::-webkit-scrollbar,
+:root[data-sb-mode="fixed"][data-sb]:not([data-sb="native"])::-webkit-scrollbar {
+  width: var(--sb-size); height: var(--sb-size);
   background: var(--sb-track);
 }
-/* Firefox and the standard: same two tokens, no hover, no size. */
+:root[data-sb-mode="fixed"] [data-sb]:not([data-sb="native"])::-webkit-scrollbar-corner,
+:root[data-sb-mode="fixed"][data-sb]:not([data-sb="native"])::-webkit-scrollbar-corner {
+  background: var(--sb-track);
+}
+
+/* Firefox and the standard: the same two tokens, no hover, no inset.
+   Not verified here — there is no Firefox in this environment. */
 @supports not selector(::-webkit-scrollbar) {
   [data-sb]:not([data-sb="native"]) {
-    scrollbar-width: thin;
     scrollbar-color: var(--sb-thumb) var(--sb-track);
+  }
+  :root[data-sb-mode="fixed"] [data-sb]:not([data-sb="native"]),
+  :root[data-sb-mode="fixed"][data-sb]:not([data-sb="native"]) {
+    scrollbar-width: thin;
   }
 }
 
@@ -248,35 +307,51 @@ table.sb-data code { background: transparent; padding: 0; }
 
   <!-- ══ TOOLBAR ══════════════════════════════════════════ -->
   <div class="sb-bar">
-    <div class="sb-bar__group">
-      <span class="sb-bar__label">Theme</span>
-      <div class="sb-chips" id="skin-chips"></div>
+    <div class="sb-bar__row">
+      <div class="sb-bar__group">
+        <span class="sb-bar__label">Theme</span>
+        <div class="sb-chips" id="skin-chips"></div>
+      </div>
     </div>
-    <div class="sb-bar__spacer"></div>
-    <div class="sb-bar__sep"></div>
-    <div class="sb-bar__group">
-      <span class="sb-bar__label">Thickness</span>
-      <input type="range" class="sb-range" id="size-range" min="6" max="18" step="1" value="12"
-             aria-label="Scrollbar thickness">
-      <span class="sb-readout" id="size-out">12px</span>
+
+    <div class="sb-bar__row">
+      <div class="sb-bar__group">
+        <span class="sb-bar__label">Visibility</span>
+        <div class="sb-chips" id="mode-chips"></div>
+      </div>
+      <p class="sb-bar__why" id="mode-why"></p>
     </div>
-    <div class="sb-bar__group">
-      <span class="sb-bar__label">Corners</span>
-      <select class="input__field sb-select" id="radius-sel" aria-label="Thumb corners">
-        <option value="var(--rounded-full)">Rounded</option>
-        <option value="var(--rounded-md)">Soft</option>
-        <option value="0">Square</option>
-      </select>
+
+    <div class="sb-bar__row">
+      <div class="sb-bar__group" id="size-group">
+        <span class="sb-bar__label">Thickness</span>
+        <input type="range" class="sb-range" id="size-range" min="6" max="20" step="1" value="12"
+               aria-label="Scrollbar thickness">
+        <span class="sb-readout" id="size-out">12px</span>
+      </div>
+      <div class="sb-bar__group">
+        <span class="sb-bar__label">Inset</span>
+        <input type="range" class="sb-range" id="inset-range" min="0" max="5" step="1" value="2"
+               aria-label="Thumb inset">
+        <span class="sb-readout" id="inset-out">2px</span>
+      </div>
+      <div class="sb-bar__group">
+        <span class="sb-bar__label">Corners</span>
+        <div class="sb-chips" id="radius-chips"></div>
+      </div>
+      <div class="sb-bar__group">
+        <span class="sb-bar__label">Track</span>
+        <div class="sb-chips" id="track-chips"></div>
+      </div>
     </div>
   </div>
 
   <!-- ══ OPTIONS ══════════════════════════════════════════ -->
   <section class="sb-section">
     <div class="sb-section__head">
-      <h2 class="sb-section-title">Four ways to paint it</h2>
-      <p class="sb-lead">Every box holds the same text on the theme's card surface. Scroll with the
-        trackpad and hover the thumb: on macOS the scrollbar only appears while you move, so the
-        real judgement is in motion. Switch theme up top without losing your place.</p>
+      <h2 class="sb-section-title">Five ways to paint it</h2>
+      <p class="sb-lead">Same text, same card surface, one option each. On macOS the scrollbar only
+        shows while you move, so judge it in motion — and hover it.</p>
     </div>
     <div class="sb-grid">
 
@@ -284,13 +359,13 @@ table.sb-data code { background: transparent; padding: 0; }
         <div class="sb-card__head">
           <h3>Native</h3>
         </div>
-        <p class="sb-card__note">Nothing painted. The theme just tells the browser it is dark and the browser draws its own scrollbar — the same one the rest of the system uses.</p>
+        <p class="sb-card__note">Nothing painted. The theme only declares it is dark and the browser draws its own.</p>
         <div class="sb-card__body">
           <div class="sb-box" data-sb="native" tabindex="0">
-            <p>In light mode nobody looks at the scrollbar: the browser paints a grey channel that melts into the background. Switch the panel to dark and that same factory grey becomes the brightest thing on screen.</p><p>The thumb is a control — it gets dragged, hovered and pressed. Too faint and it doesn't read as something you can grab; too strong and it competes with the content sitting right next to it.</p><p>What gets decided here is not the colour, it's the weight. Every option draws from the same Lexicon grey ramp, so the only question is how far from the panel the thumb needs to sit.</p><p>Scroll this box in light and in dark with the same option selected. If it vanishes in one and shouts in the other, that pair of tokens doesn't weigh the same in both and needs its own value per theme.</p><p>The last check is the boring one: hover it and press it. An option that only reads on hover is an option that doesn't read.</p>
+            <p>The thumb is a control: it gets dragged, hovered and pressed. Too faint and it does not read as something you can grab; too strong and it competes with the content beside it.</p><p>What is being decided is not the colour but the weight. Every option draws from the same grey ramp, so the only question is how far from the panel the thumb has to sit.</p><p>Compare the same option in light and in dark. If it vanishes in one and shouts in the other, that pair does not weigh the same in both and dark needs a pair of its own.</p><p>Hover it and press it. An option that only reads on hover is an option that does not read.</p>
           </div>
           <div class="sb-box sb-box--x" data-sb="native" tabindex="0">
-            <div class="sb-wide">And horizontally, with the same pair</div>
+            <div class="sb-wide">Horizontal</div>
           </div>
         </div>
       </div>
@@ -299,13 +374,13 @@ table.sb-data code { background: transparent; padding: 0; }
         <div class="sb-card__head">
           <h3>Thumb only</h3>
         </div>
-        <p class="sb-card__note">No track is painted, so all you see is the thumb floating over whatever panel is underneath. Behaves the same on every surface.</p>
+        <p class="sb-card__note">No track. The thumb floats over whatever panel is underneath, so it behaves the same on every surface.</p>
         <div class="sb-card__body">
           <div class="sb-box" data-sb="ghost" tabindex="0">
-            <p>In light mode nobody looks at the scrollbar: the browser paints a grey channel that melts into the background. Switch the panel to dark and that same factory grey becomes the brightest thing on screen.</p><p>The thumb is a control — it gets dragged, hovered and pressed. Too faint and it doesn't read as something you can grab; too strong and it competes with the content sitting right next to it.</p><p>What gets decided here is not the colour, it's the weight. Every option draws from the same Lexicon grey ramp, so the only question is how far from the panel the thumb needs to sit.</p><p>Scroll this box in light and in dark with the same option selected. If it vanishes in one and shouts in the other, that pair of tokens doesn't weigh the same in both and needs its own value per theme.</p><p>The last check is the boring one: hover it and press it. An option that only reads on hover is an option that doesn't read.</p>
+            <p>The thumb is a control: it gets dragged, hovered and pressed. Too faint and it does not read as something you can grab; too strong and it competes with the content beside it.</p><p>What is being decided is not the colour but the weight. Every option draws from the same grey ramp, so the only question is how far from the panel the thumb has to sit.</p><p>Compare the same option in light and in dark. If it vanishes in one and shouts in the other, that pair does not weigh the same in both and dark needs a pair of its own.</p><p>Hover it and press it. An option that only reads on hover is an option that does not read.</p>
           </div>
           <div class="sb-box sb-box--x" data-sb="ghost" tabindex="0">
-            <div class="sb-wide">And horizontally, with the same pair</div>
+            <div class="sb-wide">Horizontal</div>
           </div>
         </div>
         <div class="sb-card__foot" id="foot-ghost">
@@ -321,13 +396,13 @@ table.sb-data code { background: transparent; padding: 0; }
         <div class="sb-card__head">
           <h3>Thumb + track</h3>
         </div>
-        <p class="sb-card__note">The track takes the panel grey and the thumb sits one step above it. The classic reading: you can see where the thumb will travel before it moves.</p>
+        <p class="sb-card__note">Track in the panel grey, thumb one step above. You can see where it will travel before it moves.</p>
         <div class="sb-card__body">
           <div class="sb-box" data-sb="lexicon" tabindex="0">
-            <p>In light mode nobody looks at the scrollbar: the browser paints a grey channel that melts into the background. Switch the panel to dark and that same factory grey becomes the brightest thing on screen.</p><p>The thumb is a control — it gets dragged, hovered and pressed. Too faint and it doesn't read as something you can grab; too strong and it competes with the content sitting right next to it.</p><p>What gets decided here is not the colour, it's the weight. Every option draws from the same Lexicon grey ramp, so the only question is how far from the panel the thumb needs to sit.</p><p>Scroll this box in light and in dark with the same option selected. If it vanishes in one and shouts in the other, that pair of tokens doesn't weigh the same in both and needs its own value per theme.</p><p>The last check is the boring one: hover it and press it. An option that only reads on hover is an option that doesn't read.</p>
+            <p>The thumb is a control: it gets dragged, hovered and pressed. Too faint and it does not read as something you can grab; too strong and it competes with the content beside it.</p><p>What is being decided is not the colour but the weight. Every option draws from the same grey ramp, so the only question is how far from the panel the thumb has to sit.</p><p>Compare the same option in light and in dark. If it vanishes in one and shouts in the other, that pair does not weigh the same in both and dark needs a pair of its own.</p><p>Hover it and press it. An option that only reads on hover is an option that does not read.</p>
           </div>
           <div class="sb-box sb-box--x" data-sb="lexicon" tabindex="0">
-            <div class="sb-wide">And horizontally, with the same pair</div>
+            <div class="sb-wide">Horizontal</div>
           </div>
         </div>
         <div class="sb-card__foot" id="foot-lexicon">
@@ -343,13 +418,13 @@ table.sb-data code { background: transparent; padding: 0; }
         <div class="sb-card__head">
           <h3>Subtle</h3>
         </div>
-        <p class="sb-card__note">Everything comes from the surface ramp, so the thumb is just a slightly lighter panel. The quietest of the four.</p>
+        <p class="sb-card__note">Both from the surface ramp, so the thumb is just a slightly lighter panel.</p>
         <div class="sb-card__body">
           <div class="sb-box" data-sb="quiet" tabindex="0">
-            <p>In light mode nobody looks at the scrollbar: the browser paints a grey channel that melts into the background. Switch the panel to dark and that same factory grey becomes the brightest thing on screen.</p><p>The thumb is a control — it gets dragged, hovered and pressed. Too faint and it doesn't read as something you can grab; too strong and it competes with the content sitting right next to it.</p><p>What gets decided here is not the colour, it's the weight. Every option draws from the same Lexicon grey ramp, so the only question is how far from the panel the thumb needs to sit.</p><p>Scroll this box in light and in dark with the same option selected. If it vanishes in one and shouts in the other, that pair of tokens doesn't weigh the same in both and needs its own value per theme.</p><p>The last check is the boring one: hover it and press it. An option that only reads on hover is an option that doesn't read.</p>
+            <p>The thumb is a control: it gets dragged, hovered and pressed. Too faint and it does not read as something you can grab; too strong and it competes with the content beside it.</p><p>What is being decided is not the colour but the weight. Every option draws from the same grey ramp, so the only question is how far from the panel the thumb has to sit.</p><p>Compare the same option in light and in dark. If it vanishes in one and shouts in the other, that pair does not weigh the same in both and dark needs a pair of its own.</p><p>Hover it and press it. An option that only reads on hover is an option that does not read.</p>
           </div>
           <div class="sb-box sb-box--x" data-sb="quiet" tabindex="0">
-            <div class="sb-wide">And horizontally, with the same pair</div>
+            <div class="sb-wide">Horizontal</div>
           </div>
         </div>
         <div class="sb-card__foot" id="foot-quiet">
@@ -365,13 +440,13 @@ table.sb-data code { background: transparent; padding: 0; }
         <div class="sb-card__head">
           <h3>Strong</h3>
         </div>
-        <p class="sb-card__note">One step further up the grey ramp. The only option that, in dark, separates from the panel enough to read as a control without hovering it.</p>
+        <p class="sb-card__note">One step further up the ramp. The only one that clears 3 in dark without being hovered.</p>
         <div class="sb-card__body">
           <div class="sb-box" data-sb="strong" tabindex="0">
-            <p>In light mode nobody looks at the scrollbar: the browser paints a grey channel that melts into the background. Switch the panel to dark and that same factory grey becomes the brightest thing on screen.</p><p>The thumb is a control — it gets dragged, hovered and pressed. Too faint and it doesn't read as something you can grab; too strong and it competes with the content sitting right next to it.</p><p>What gets decided here is not the colour, it's the weight. Every option draws from the same Lexicon grey ramp, so the only question is how far from the panel the thumb needs to sit.</p><p>Scroll this box in light and in dark with the same option selected. If it vanishes in one and shouts in the other, that pair of tokens doesn't weigh the same in both and needs its own value per theme.</p><p>The last check is the boring one: hover it and press it. An option that only reads on hover is an option that doesn't read.</p>
+            <p>The thumb is a control: it gets dragged, hovered and pressed. Too faint and it does not read as something you can grab; too strong and it competes with the content beside it.</p><p>What is being decided is not the colour but the weight. Every option draws from the same grey ramp, so the only question is how far from the panel the thumb has to sit.</p><p>Compare the same option in light and in dark. If it vanishes in one and shouts in the other, that pair does not weigh the same in both and dark needs a pair of its own.</p><p>Hover it and press it. An option that only reads on hover is an option that does not read.</p>
           </div>
           <div class="sb-box sb-box--x" data-sb="strong" tabindex="0">
-            <div class="sb-wide">And horizontally, with the same pair</div>
+            <div class="sb-wide">Horizontal</div>
           </div>
         </div>
         <div class="sb-card__foot" id="foot-strong">
@@ -389,9 +464,10 @@ table.sb-data code { background: transparent; padding: 0; }
   <section class="sb-section">
     <div class="sb-section__head">
       <h2 class="sb-section-title">The chosen option, in place</h2>
-      <p class="sb-lead">Pick one and it applies at once to the three panel levels, to the five
-        real places below, and to this page's own scrollbar. The options with a track fail on the
-        first strip: the track is pinned to one panel level and the other two give it away.</p>
+      <p class="sb-lead">Pick one and it applies to the three panel levels, the five real places
+        below and this page's own scrollbar. The thumb is the control, so what matters is that it
+        holds up on every surface it can land on — a track pinned to one panel level is given away
+        by the other two.</p>
     </div>
 
     <div class="sb-chips" id="finalist-chips"></div>
@@ -399,15 +475,15 @@ table.sb-data code { background: transparent; padding: 0; }
     <div class="sb-surfaces">
       <div class="sb-surf sb-surf--white" data-sb="ghost" data-finalist tabindex="0">
         <span class="sb-surf__tag">Card <em>--color-white</em></span>
-        <p>In light mode nobody looks at the scrollbar: the browser paints a grey channel that melts into the background. Switch the panel to dark and that same factory grey becomes the brightest thing on screen.</p><p>The thumb is a control — it gets dragged, hovered and pressed. Too faint and it doesn't read as something you can grab; too strong and it competes with the content sitting right next to it.</p><p>What gets decided here is not the colour, it's the weight. Every option draws from the same Lexicon grey ramp, so the only question is how far from the panel the thumb needs to sit.</p>
+        <p>The thumb is a control: too faint and it does not read as something you can grab, too strong and it competes with the content beside it.</p><p>What is being decided is not the colour but the weight — how far from this surface the thumb has to sit to still read as a control.</p><p>A track pinned to one panel level cannot do this: it reads as a band here and vanishes there.</p>
       </div>
       <div class="sb-surf sb-surf--l1" data-sb="ghost" data-finalist tabindex="0">
         <span class="sb-surf__tag">Panel <em>--color-light-l1</em></span>
-        <p>In light mode nobody looks at the scrollbar: the browser paints a grey channel that melts into the background. Switch the panel to dark and that same factory grey becomes the brightest thing on screen.</p><p>The thumb is a control — it gets dragged, hovered and pressed. Too faint and it doesn't read as something you can grab; too strong and it competes with the content sitting right next to it.</p><p>What gets decided here is not the colour, it's the weight. Every option draws from the same Lexicon grey ramp, so the only question is how far from the panel the thumb needs to sit.</p>
+        <p>The thumb is a control: too faint and it does not read as something you can grab, too strong and it competes with the content beside it.</p><p>What is being decided is not the colour but the weight — how far from this surface the thumb has to sit to still read as a control.</p><p>A track pinned to one panel level cannot do this: it reads as a band here and vanishes there.</p>
       </div>
       <div class="sb-surf sb-surf--light" data-sb="ghost" data-finalist tabindex="0">
         <span class="sb-surf__tag">Background <em>--color-light</em></span>
-        <p>In light mode nobody looks at the scrollbar: the browser paints a grey channel that melts into the background. Switch the panel to dark and that same factory grey becomes the brightest thing on screen.</p><p>The thumb is a control — it gets dragged, hovered and pressed. Too faint and it doesn't read as something you can grab; too strong and it competes with the content sitting right next to it.</p><p>What gets decided here is not the colour, it's the weight. Every option draws from the same Lexicon grey ramp, so the only question is how far from the panel the thumb needs to sit.</p>
+        <p>The thumb is a control: too faint and it does not read as something you can grab, too strong and it competes with the content beside it.</p><p>What is being decided is not the colour but the weight — how far from this surface the thumb has to sit to still read as a control.</p><p>A track pinned to one panel level cannot do this: it reads as a band here and vanishes there.</p>
       </div>
     </div>
 
@@ -507,7 +583,7 @@ table.sb-data code { background: transparent; padding: 0; }
                 </button>
               </header>
               <div class="modal__body" data-sb="ghost" data-finalist tabindex="0">
-                <p>The thumb is a control — it gets dragged, hovered and pressed. Too faint and it doesn't read as something you can grab; too strong and it competes with the content sitting right next to it.</p><p>What gets decided here is not the colour, it's the weight. Every option draws from the same Lexicon grey ramp, so the only question is how far from the panel the thumb needs to sit.</p><p>Scroll this box in light and in dark with the same option selected. If it vanishes in one and shouts in the other, that pair of tokens doesn't weigh the same in both and needs its own value per theme.</p>
+                <p>The thumb is a control: too faint and it does not read as something you can grab, too strong and it competes with the content beside it.</p><p>What is being decided is not the colour but the weight — how far from this surface the thumb has to sit to still read as a control.</p><p>A modal body is the awkward case: the panel behind it is dimmed, the card is not.</p>
               </div>
               <footer class="modal__footer">
                 <button class="btn btn--secondary">Cancel</button>
@@ -598,8 +674,7 @@ table.sb-data code { background: transparent; padding: 0; }
       <div class="sb-ctx">
         <span class="sb-ctx__label">Long dropdown</span>
         <div class="sb-ctx__frame">
-          <div class="sb-drop-shell">
-            <ul class="dropdown" role="menu" data-sb="ghost" data-finalist tabindex="0">
+            <ul class="dropdown sb-drop-shell" role="menu" data-sb="ghost" data-finalist tabindex="0">
               <li class="dropdown__group-title">Actions</li>
               <li><button class="dropdown__item" role="menuitem">Edit</button></li>
               <li><button class="dropdown__item" role="menuitem">Permissions</button></li>
@@ -614,7 +689,6 @@ table.sb-data code { background: transparent; padding: 0; }
               <li><button class="dropdown__item" role="menuitem">Import</button></li>
               <li><button class="dropdown__item" role="menuitem">Move to Recycle Bin</button></li>
             </ul>
-          </div>
         </div>
       </div>
 
@@ -622,13 +696,17 @@ table.sb-data code { background: transparent; padding: 0; }
         <span class="sb-ctx__label">Text field</span>
         <div class="sb-ctx__frame">
           <textarea class="input__field sb-ta" data-sb="ghost" data-finalist
-            aria-label="Sample text field">In light mode nobody looks at the scrollbar: the browser paints a grey channel that melts into the background. Switch the panel to dark and that same factory grey becomes the brightest thing on screen.
+            aria-label="Sample text field">The thumb is a control: too faint and it does not read as something you can grab, too strong and it competes with the content beside it.
 
-The thumb is a control — it gets dragged, hovered and pressed. Too faint and it doesn't read as something you can grab; too strong and it competes with the content sitting right next to it.
+What is being decided is not the colour but the weight — how far from this surface the thumb has to sit to still read as a control.
 
-What gets decided here is not the colour, it's the weight. Every option draws from the same Lexicon grey ramp, so the only question is how far from the panel the thumb needs to sit.
+A text field is the one place where the scrolling surface is an input, not a panel. The field is white in light and near-black in dark, same as a card, so the thumb has the same job here as anywhere else.
 
-Scroll this box in light and in dark with the same option selected. If it vanishes in one and shouts in the other, that pair of tokens doesn't weigh the same in both and needs its own value per theme.</textarea>
+The difference is the border: an input already draws one, and a track sitting inside it reads as a second frame.
+
+Which is the argument for no track at all. The thumb is what gets dragged; the channel behind it is decoration that has to work on every surface it can land on, and it does not.
+
+Resize the window and watch this field: the thumb has to hold up at every width, not just the one it was designed at.</textarea>
         </div>
       </div>
 
@@ -639,9 +717,9 @@ Scroll this box in light and in dark with the same option selected. If it vanish
   <section class="sb-section">
     <div class="sb-section__head">
       <h2 class="sb-section-title">How far the thumb sits from its background</h2>
-      <p class="sb-lead">Measured in whichever theme is selected above. The reference for anything
-        draggable is <strong>3</strong>: below that the thumb reads as decoration rather than as
-        something you can grab. Below 2 it is barely there at all.</p>
+      <p class="sb-lead">In the theme selected above. The reference for anything draggable is
+        <strong>3</strong>; below 2 it is barely there. The verdict takes the worst surface, because
+        the thumb has to work on all of them.</p>
     </div>
     <div class="sb-tablewrap">
       <table class="sb-data">
@@ -660,36 +738,61 @@ Scroll this box in light and in dark with the same option selected. If it vanish
   <section class="sb-section">
     <div class="sb-section__head">
       <h2 class="sb-section-title">What we would need to add</h2>
-      <p class="sb-lead">Six new tokens pointing at the ramp we already have, the same way
-        skeletons and charts already do it. Because they point at the ramp they flip with the theme
-        on their own: no separate block for dark, and no colour left hardcoded.</p>
+      <p class="sb-lead">Tokens pointing at the ramp we already have, the way skeletons and charts
+        do. They flip with the theme on their own: no separate dark block, no colour hardcoded.</p>
     </div>
     <pre class="sb-pre">:root {
-  --scrollbar-thumb:        var(--color-secondary-l2);
-  --scrollbar-thumb-hover:  var(--color-secondary-l1);
-  --scrollbar-thumb-active: var(--color-secondary-l0);
+  --scrollbar-thumb:        var(--color-secondary-l1);
+  --scrollbar-thumb-hover:  var(--color-secondary-l0);
+  --scrollbar-thumb-active: var(--color-secondary);
   --scrollbar-track:        transparent;
-  --scrollbar-size:         12px;
+  --scrollbar-inset:        2px;
   --scrollbar-radius:       var(--rounded-full);
+
+  /* Only needed if we decide to override the system preference.
+     Setting a size is what forces the scrollbar permanently on. */
+  --scrollbar-size:         12px;
 }</pre>
     <ul class="sb-notes">
       <li class="sb-note">
+        <h4>Only the track is optional — the thumb is not</h4>
+        <p>The thumb is the thing you drag, so it is the one that has to clear the contrast bar. The
+          track is decoration, and a track pinned to one panel level reads as a band on a card and
+          disappears on the background. Dropping it means the thumb has to hold up on every surface
+          on its own, which is what the strip above is for.</p>
+      </li>
+      <li class="sb-note">
+        <h4>Thickness is the one control that costs the user's choice</h4>
+        <p>Whether the scrollbar is always there or only shows while scrolling is a system
+          preference. Measured here: colour, hover, inset and corners on the thumb all leave it
+          intact and reserve <code>0px</code>. A single rule on <code>::-webkit-scrollbar</code> —
+          which is what setting a thickness needs — forces it permanently on and takes
+          <code>12px</code> from the content. If we want to leave the decision to the user, we ship
+          no size.</p>
+      </li>
+      <li class="sb-note">
+        <h4>Always visible does not mean a visible track</h4>
+        <p>The two are independent. Forcing the scrollbar on and leaving the track transparent gives
+          a permanent thumb over whatever panel is underneath — the <em>Thumb only</em> option with
+          <em>Always visible</em>. Both switches are in the toolbar.</p>
+      </li>
+      <li class="sb-note">
         <h4>The same token does not weigh the same in both themes</h4>
-        <p>The grey ramp is not an exact mirror of itself: <code>--color-secondary-l2</code> reads noticeably
-          heavier in dark than in light. We have to decide what should match — the token or the visual
-          weight. If it is the weight, dark needs a pair of its own.</p>
+        <p>The grey ramp is not an exact mirror of itself: <code>--color-secondary-l2</code> reads
+          noticeably heavier in dark than in light. We have to decide what should match — the token
+          or the visual weight. If it is the weight, dark needs a pair of its own.</p>
       </li>
       <li class="sb-note">
         <h4>Firefox gets no hover</h4>
-        <p>The colours apply in every browser, but the change on hover, the thickness and the
-          rounded corners only work in Chrome, Safari and Edge. In Firefox the thumb comes out with
-          the same pair of colours at the system thickness.</p>
+        <p>The colours apply through <code>scrollbar-color</code>, but hover, inset and corners are
+          <code>::-webkit-scrollbar</code> pseudo-elements: Chrome, Safari and Edge only. Not
+          verified here — there was no Firefox in the environment this was built in.</p>
       </li>
       <li class="sb-note">
         <h4>The browser still needs telling</h4>
-        <p>On top of the tokens, the theme has to declare itself dark to the browser. That is what
-          fixes the scrollbars we cannot paint — native selects, third-party iframes — and the
-          system form controls.</p>
+        <p>On top of the tokens, the theme has to declare itself dark through
+          <code>color-scheme</code>. That is what fixes the scrollbars we cannot paint — native
+          selects, third-party iframes — and the system form controls.</p>
       </li>
       <li class="sb-note">
         <h4>Focus cannot be painted</h4>
@@ -754,6 +857,25 @@ window.SB_CANDS = [{"id":"native","label":"Native","thumb":"\u2014","track":"\u2
     return '<span class="sb-low">barely visible</span>';
   }
 
+  /* ── chips ────────────────────────────────────────────── */
+  function chipGroup(hostId, options, activeIndex, onPick) {
+    var host = document.getElementById(hostId);
+    var btns = options.map(function (o, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'sb-chip' + (i === activeIndex ? ' is-active' : '');
+      b.textContent = o.label;
+      b.addEventListener('click', function () {
+        btns.forEach(function (x) { x.classList.toggle('is-active', x === b); });
+        onPick(o);
+      });
+      host.appendChild(b);
+      return b;
+    });
+    onPick(options[activeIndex]);
+    return btns;
+  }
+
   /* ── themes ───────────────────────────────────────────── */
   var current = 'dark';
   function applyPalette(id) {
@@ -779,13 +901,79 @@ window.SB_CANDS = [{"id":"native","label":"Native","thumb":"\u2014","track":"\u2
     chips.appendChild(b);
   });
 
-  /* ── thickness and corners ────────────────────────────── */
-  var sr = document.getElementById('size-range'), so = document.getElementById('size-out');
-  function sizeGo() { root.style.setProperty('--sb-size', sr.value + 'px'); so.textContent = sr.value + 'px'; }
-  sr.addEventListener('input', sizeGo); sizeGo();
+  /* ── shape ────────────────────────────────────────────────
+     All three write the variable on <html>. That only reaches the
+     boxes because the defaults sit on :root — see the CSS note. */
+  function slider(rangeId, outId, prop) {
+    var r = document.getElementById(rangeId), o = document.getElementById(outId);
+    function go() { root.style.setProperty(prop, r.value + 'px'); o.textContent = r.value + 'px'; }
+    r.addEventListener('input', go); go();
+    return r;
+  }
+  var sizeRange = slider('size-range', 'size-out', '--sb-size');
+  slider('inset-range', 'inset-out', '--sb-inset');
 
-  var rad = document.getElementById('radius-sel');
-  rad.addEventListener('change', function () { root.style.setProperty('--sb-radius', rad.value); });
+  chipGroup('radius-chips', [
+    { label: 'Round',  value: 'var(--rounded-full)' },
+    { label: 'Soft',   value: 'var(--rounded-md)' },
+    { label: 'Square', value: '0' }
+  ], 0, function (o) { root.style.setProperty('--sb-radius', o.value); });
+
+  /* ── track ────────────────────────────────────────────────
+     The thumb is the interactive part, so the track is optional. What
+     decides the thumb is the surface it lands on, which is why the
+     track can be switched off here. "From option" keeps each
+     candidate's own pair. */
+  chipGroup('track-chips', [
+    { label: 'From option', value: '' },
+    { label: 'None',        value: 'none' },
+    { label: 'Panel',       value: 'panel' }
+  ], 0, function (o) {
+    [].forEach.call(document.querySelectorAll('[data-sb]'), function (el) {
+      if (o.value) el.setAttribute('data-track', o.value);
+      else el.removeAttribute('data-track');
+    });
+    render();
+  });
+
+  /* ── visibility ───────────────────────────────────────────
+     Measured, not assumed: only a rule on ::-webkit-scrollbar itself
+     opts an element out of the system's show-on-scroll preference,
+     and that is exactly the rule thickness needs. So "OS preference"
+     can still recolour and reshape the thumb; it just cannot resize
+     it. The readout prints the space the scrollbar takes from the
+     content, live. */
+  var modeWhy = document.getElementById('mode-why');
+  var sizeGroup = document.getElementById('size-group');
+
+  function gutter() {
+    var el = document.querySelector('.sb-box[data-sb="ghost"]');
+    return el ? el.offsetWidth - el.clientWidth : 0;
+  }
+  function modeGo(value) {
+    root.setAttribute('data-sb-mode', value);
+    sizeGroup.classList.toggle('is-off', value === 'os');
+    sizeRange.disabled = (value === 'os');
+    // gutter() reads offsetWidth, which forces layout, so the number is
+    // already the post-switch one. Done synchronously on purpose: in a
+    // background tab requestAnimationFrame can be throttled and the
+    // readout would sit there empty.
+    var g = gutter();
+    modeWhy.innerHTML = value === 'os'
+      ? 'The system decides — on macOS it overlays the content and fades out when you stop. '
+        + 'Colour, inset and corners still apply; thickness cannot, because setting it is what '
+        + 'overrides the preference. Reserves <strong>' + g + 'px</strong>.'
+      : 'Forced permanently on, so it stops being the user’s choice. '
+        + 'Reserves <strong>' + g + 'px</strong> of content width.';
+  }
+  /* Starts on "Always visible" because that is the only mode where the
+     five options can be compared side by side — in OS mode the thumbs
+     fade out when you stop moving. Flip it to see what shipping the
+     preference actually looks like. */
+  chipGroup('mode-chips', [
+    { label: 'OS preference', value: 'os' },
+    { label: 'Always visible', value: 'fixed' }
+  ], 1, function (o) { modeGo(o.value); });
 
   /* ── the chosen option ────────────────────────────────── */
   var finalist = 'ghost';
