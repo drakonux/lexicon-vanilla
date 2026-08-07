@@ -260,6 +260,16 @@
       box-shadow: 0 0 0 var(--spacing-1) var(--color-white);
     }
     .pim-space, .pim-author { align-items: center; display: inline-flex; gap: var(--spacing-2); }
+    /* Space chip as a link (crosses into the space world). Only the NAME
+       underlines on hover — never the chip's letter. */
+    .pim-space-link { align-items: center; color: inherit; cursor: pointer; display: inline-flex; gap: var(--spacing-3); text-decoration: none; }
+    .pim-space-link:hover .pim-space-name { text-decoration: underline; }
+    /* Inline space chip + name inside the aggregated breadcrumb (like the tree).
+       Override the breadcrumb's link underline so only the NAME underlines, not
+       the chip's letter. */
+    .pim-crumb-space { align-items: center; display: inline-flex; gap: var(--spacing-3); }
+    .breadcrumb a.pim-crumb-space:hover { text-decoration: none; }
+    .pim-crumb-space:hover .pim-space-name { text-decoration: underline; }
     .pim-author .lexicon-icon { color: var(--color-secondary); }
     .table__sort { color: var(--color-secondary-l1); margin-left: var(--spacing-1); vertical-align: middle; }
     .pim-badge { margin-left: var(--spacing-3); }
@@ -948,7 +958,7 @@
       return '<tr><td class="table__cell--gutter">' + CHECKBOX + '</td>'
         + '<td><span class="pim-sku"><span class="sticker sticker--md sticker--icon"><svg class="lexicon-icon"><use href="' + r.icon + '"></use></svg></span><a href="#" class="table__title">' + r.name + '</a></span></td>'
         + '<td>' + r.type + '</td>'
-        + '<td>' + spaceCell(SPACES[r.space]) + '</td>'
+        + '<td>' + spaceCell(r.space) + '</td>'
         + '<td><span class="pim-author"><svg class="lexicon-icon"><use href="#user"></use></svg> ' + r.author + '</span></td>'
         + '<td>' + r.modified + '</td>'
         + '<td>' + r.revised + '</td>'
@@ -989,14 +999,19 @@
         ? '<span class="sticker sticker--md"><img src="' + p.thumb.img + '" alt=""></span>'
         : '<span class="sticker sticker--md sticker--icon"><svg class="lexicon-icon"><use href="' + p.thumb.icon + '"></use></svg></span>';
     }
-    function spaceCell(sp) {
-      return '<span class="pim-space"><span class="sticker sticker--outline sticker--space" style="--sc:' + sp.color + '" aria-hidden="true">' + sp.code + '</span> ' + sp.name + '</span>';
+    // The space chip is the explicit link that crosses from the aggregated world
+    // into the space world (in-space product list). data-space-link carries the key.
+    function spaceCell(spaceKey) {
+      var sp = SPACES[spaceKey];
+      return '<span class="pim-space"><a href="#" class="pim-space-link" data-space-link="' + spaceKey + '">'
+        + '<span class="sticker sticker--outline sticker--space" style="--sc:' + sp.color + '" aria-hidden="true">' + sp.code + '</span>'
+        + '<span class="pim-space-name">' + sp.name + '</span></a></span>';
     }
     // Trailing cells shared by both row kinds (Title → actions).
     function metaCells(p) {
       return '<td>' + p.title + '</td>'
         + '<td>' + p.type + '</td>'
-        + '<td>' + spaceCell(SPACES[p.space]) + '</td>'
+        + '<td>' + spaceCell(p.space) + '</td>'
         + '<td><span class="pim-author"><svg class="lexicon-icon"><use href="#user"></use></svg> ' + p.author + '</span></td>'
         + '<td>' + p.modified + '</td>'
         + '<td><span class="label label--sm label--success">Published</span></td>'
@@ -1039,6 +1054,33 @@
       } else {
         stickerEl.style.display = 'none';
         olEl.innerHTML = '<li aria-current="page">All Products</li>';
+      }
+    }
+    // Aggregated-mode breadcrumb (data-set header) = the REAL Browse-by-Space
+    // tree path of the active node, segment-for-segment. The tree elides the
+    // section, so "Products" never appears here. Every non-current segment is an
+    // <a data-crumb> whose click calls render() only — it never crosses into the
+    // space world (that is the space chip's job). The space chip is inline in the
+    // space segment, like the tree; the separate ds-crumb-sticker stays hidden.
+    function buildAggregateCrumb(olEl, label) {
+      dsSticker.style.display = 'none';
+      var v = VIEWS[label];
+      if (!v || !v.space) {
+        olEl.innerHTML = '<li aria-current="page">All Products</li>';
+        return;
+      }
+      var sp = SPACES[v.space];
+      var chip = '<span class="sticker sticker--outline sticker--space" style="--sc:' + sp.color + '" aria-hidden="true">' + sp.code + '</span>';
+      var root = '<li><a href="#" data-crumb="All Products">All Products</a>' + SEP + '</li>';
+      var chipName = chip + '<span class="pim-space-name">' + sp.name + '</span>';
+      if (!v.leaf) {
+        // A space is the active node → it is the current (last) segment.
+        olEl.innerHTML = root + '<li aria-current="page"><span class="pim-crumb-space">' + chipName + '</span></li>';
+      } else {
+        // A parent product is active → space becomes a link, product is current.
+        olEl.innerHTML = root
+          + '<li><a href="#" data-crumb="' + sp.name + '" class="pim-crumb-space">' + chipName + '</a>' + SEP + '</li>'
+          + '<li aria-current="page">' + v.leaf + '</li>';
       }
     }
     function renderView(label) {
@@ -1119,7 +1161,7 @@
     // when a space crumb is clicked, navigates the side menu to that space.
     function renderDataSetHeader(label) {
       if (document.body.classList.contains('in-space')) return; // hidden by CSS
-      buildCrumb(dsOl, dsSticker, VIEWS[label]);
+      buildAggregateCrumb(dsOl, label);
     }
 
     // Reveal a row in the tree by expanding all of its ancestor groups.
@@ -1244,12 +1286,22 @@
     //    are ignored. SKU rows are leaves (no navigation).
     tableWrap.addEventListener('click', function (e) {
       if (e.target.closest('.checkbox') || e.target.closest('button')) return;
+      // The space chip is the explicit cross into the space world: it opens that
+      // space's HOME (consistent with the side menu and the space breadcrumb).
+      var spaceLink = e.target.closest('a[data-space-link]');
+      if (spaceLink) {
+        e.preventDefault();
+        showHome(spaceLink.getAttribute('data-space-link'));
+        return;
+      }
       var tr = e.target.closest('tr[data-product]');
       if (!tr) return;
       e.preventDefault();
       var prod = tr.getAttribute('data-product');
-      var atGlobal = !VIEWS[current] || !VIEWS[current].space;
-      navigate(atGlobal ? SPACES[PRODUCTS[prod].space].name : prod);
+      // Aggregated → open the product in situ (its SKUs), staying aggregated.
+      // Inside a space → drill into the product (current in-space behaviour).
+      if (document.body.classList.contains('in-space')) navigate(prod);
+      else render(prod);
     });
 
     // 3) Breadcrumb clicks — both the data-set header (aggregated) and the
@@ -1262,7 +1314,14 @@
       else navigate(a.dataset.nav);
     }
     ol.addEventListener('click', crumbClick);
-    dsOl.addEventListener('click', crumbClick);
+    // Aggregated data-set breadcrumb: clicks re-select the tree node via render()
+    // only — the panel stays, the sidebar doesn't move, we never enter in-space.
+    dsOl.addEventListener('click', function (e) {
+      var a = e.target.closest('a[data-crumb]');
+      if (!a) return;
+      e.preventDefault();
+      render(a.getAttribute('data-crumb'));
+    });
 
     // 4) Side menu — the primary navigator (works with the Browse panel
     //    collapsed and mirrors how Content/Files navigate). ASSETS > Products
