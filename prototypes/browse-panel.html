@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PIM Navigation Patterns — Lexicon Vanilla</title>
+
+  <!-- Skin + CMS-style bootstrap (verbatim from starter.html) -->
+  <script>(function(){
+    var S=['light','light-hc','dark','dark-hc'];
+    function apply(){try{
+      var r=document.documentElement;
+      var s=localStorage.getItem('vanilla-skin')||'light';
+      S.forEach(function(c){r.classList.remove(c);});
+      r.classList.add(S.indexOf(s)>-1?s:'light');
+      if(localStorage.getItem('vanilla-cms-style')==='1'){
+        r.style.setProperty('--rounded-sm','4px');
+        r.style.setProperty('--rounded-md','8px');
+        r.style.setProperty('--rounded-lg','16px');
+      }else{
+        r.style.removeProperty('--rounded-sm');
+        r.style.removeProperty('--rounded-md');
+        r.style.removeProperty('--rounded-lg');
+      }
+    }catch(e){}}
+    apply();
+    window.addEventListener('pageshow',apply);
+  })()</script>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../tokens-high-contrast.css">
+  <link rel="stylesheet" href="../tokens-dark.css">
+  <link rel="stylesheet" href="../components.css">
+  <script src="../icons.js"></script>
+
+  <style>
+    /* ── Page-level tokens ──────────────────────────────────────
+       Shell dimensions live here so the panel, main's pinned margin
+       and the control-menu title shift all read one source of truth. */
+    :root {
+      --sidebar-width: 280px;       /* docked left nav (Control Panel)  */
+      --browse-width: 264px;        /* Browse by Space contextual panel */
+      --cp-chrome-h: calc(var(--spacing-8) + 2 * (var(--spacing-2) + var(--spacing-2-5))); /* 52px chrome band */
+    }
+
+    html, body { height: 100%; }
+    body { margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* ── Top-bar chrome tweaks ───────────────────────────────── */
+    .control-menu__left { gap: var(--spacing-3); }
+    .control-menu__btn { border-radius: var(--rounded-lg); }
+    /* The menu toggle stays in the Control Menu flow but paints above the
+       floating panel, so it reads as the panel's top-left corner button. */
+    .control-menu__btns { position: relative; z-index: 60; }
+    /* Top-bar breadcrumb — the Data Set's location now lives in the Control
+       Menu (the Data Set itself has no header). It is the persistent navigation
+       spine, working the same whether or not the Browse panel is visible.
+       Space sticker → first crumb gap is 12px; the whole breadcrumb reads 18px.
+       When pinned it shifts so its left edge aligns with the Browse panel's
+       title (one clean rail): margin = 296 − 56px cluster = sidebar − toggle − gap. */
+    .cm-crumb {
+      align-items: center;
+      display: flex;
+      gap: var(--spacing-4);
+      min-width: 0;
+      transition: margin-left 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .cm-crumb .breadcrumb { min-width: 0; font-size: var(--font-size-lg); }
+    body.sb-pinned .cm-crumb {
+      margin-left: calc(var(--sidebar-width) - var(--spacing-8) - var(--spacing-3));
+    }
+    /* Pinned toggle reads as active (soft 8% tint, flips per skin). */
+    body.sb-pinned #cp-toggle,
+    body.sb-pinned #cp-toggle:hover {
+      background: color-mix(in srgb, var(--color-dark) 8%, transparent);
+    }
+
+    /* User avatar button on the right of the top bar. */
+    .cm-avatar {
+      align-items: center;
+      background: none;
+      border: 0;
+      border-radius: var(--rounded-full);
+      cursor: pointer;
+      display: inline-flex;
+      height: var(--spacing-8);
+      justify-content: center;
+      overflow: hidden;
+      padding: 0;
+      width: var(--spacing-8);
+    }
+    .cm-avatar > img { display: block; height: 100%; object-fit: cover; width: 100%; }
+
+    /* ── Docked Control Panel (left nav) ─────────────────────────
+       Flush to the screen edge, full height. Three states mirror the
+       modern-sidebar base: hidden / peek (overlay) / pinned (in flow). */
+    .control-panel--floating {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-width);
+      z-index: 50;
+      border-right: 1px solid var(--color-secondary-l2);
+      transform: translateX(calc(-1 * var(--spacing-7)));
+      opacity: 0;
+      visibility: hidden;
+      transition: transform 140ms ease-out, opacity 140ms ease-out,
+                  visibility 0s linear 140ms, box-shadow 140ms ease;
+    }
+    body.sb-pinned .control-panel--floating,
+    body.sb-peek .control-panel--floating {
+      transform: translateX(0);
+      opacity: 1;
+      visibility: visible;
+      transition: transform 140ms ease-out, opacity 140ms ease-out,
+                  visibility 0s, box-shadow 140ms ease;
+    }
+    body.sb-peek:not(.sb-pinned) .control-panel--floating { box-shadow: var(--shadow-lg); }
+
+    /* Header row: brand + theme/close, locked to the top-bar band.
+       Left padding clears the 32px overlay toggle + 8px gap. */
+    .control-panel--floating .control-panel__header {
+      height: var(--cp-chrome-h);
+      padding: 0 var(--spacing-4) 0 calc(var(--spacing-10) + var(--spacing-3));
+    }
+    .control-panel--floating .control-panel__title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+    }
+    .control-panel__actions {
+      align-items: center;
+      display: flex;
+      flex-shrink: 0;
+      gap: var(--spacing-2);
+      margin-left: auto;
+    }
+    .control-panel__actions .btn { border-radius: var(--rounded-lg); }
+    /* Close button: hidden until keyboard focus (visually-hidden-focusable). */
+    .control-panel__close { order: 1; }
+    .control-panel__close:not(:focus-visible) {
+      position: absolute; opacity: 0; pointer-events: none;
+    }
+    .control-panel:focus { outline: none; }
+    .control-panel--floating .control-panel__groups { gap: var(--spacing-3); }
+
+    /* Space avatars — the Lexicon outline sticker (.sticker sticker--outline,
+       24×24) recoloured with the space's brand hue, passed as user data via
+       --sc. The tinted background is derived from --sc so it reskins with
+       --color-white per skin (matches the CMS-menu "colour via inline" rule). */
+    .sticker--space {
+      background: color-mix(in srgb, var(--sc) 14%, var(--color-white));
+      border-color: var(--sc);
+      color: var(--sc);
+    }
+
+    /* ── Browse by Space (contextual panel, collapsible) ─────────
+       Second column inside main, toggled by the toolbar tree icon. */
+    .browse-panel {
+      background: var(--color-white);
+      border-right: 1px solid var(--color-secondary-l2);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow: hidden;
+      width: var(--browse-width);
+      transition: width 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    body.bp-collapsed .browse-panel { width: 0; border-right-color: transparent; }
+    /* The Browse panel belongs to the aggregated Products view only. Inside a
+       space (side-menu SPACES item active → body.in-space) there is no Browse
+       panel — those screens are per-space homes / Products·Files·Content roots.
+       The toolbar tree-view toggle is hidden too (nothing to toggle). */
+    body.in-space .browse-panel,
+    body.no-browse .browse-panel { display: none; }
+    body.in-space #bp-toggle,
+    body.no-browse #bp-toggle { display: none; }
+    /* Content / Files aggregated views: no Browse panel, no data-set breadcrumb
+       (only the top-bar title). The `no-browse` class marks those sections. */
+    body.no-browse .pim-crumbbar { display: none; }
+    .browse-panel__header {
+      align-items: center;
+      display: flex;
+      flex-shrink: 0;
+      /* Match the data-set breadcrumb bar's height (56px) so the centred
+         "Browse by Space" title shares the breadcrumb's baseline. */
+      height: calc(var(--spacing-10) + var(--spacing-3));
+      padding: 0 var(--spacing-5);
+    }
+    .browse-panel__title {
+      color: var(--color-dark);
+      font-size: var(--font-size-md); /* 16px — do not change */
+      font-weight: var(--font-weight-bold);
+      margin: 0;
+      white-space: nowrap;
+    }
+    .browse-panel__body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 var(--spacing-3) var(--spacing-5);
+    }
+    .tree__row.is-active .tree__label { font-weight: var(--font-weight-semi); }
+    /* A touch more breathing room between Browse tree rows: +4px vertical
+       overall (spacing-2 → spacing-2-5, i.e. 4px → 6px top & bottom). Scoped
+       to the Browse panel so the kit's other trees keep the default rhythm. */
+    .browse-panel .tree__row {
+      padding-top: var(--spacing-2-5);
+      padding-bottom: var(--spacing-2-5);
+    }
+
+    /* ── Main + content column ───────────────────────────────── */
+    main {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      overflow: hidden;
+      transition: margin-left 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    body.sb-pinned main { margin-left: var(--sidebar-width); }
+
+    .pim-content {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+    }
+
+    /* Data-set breadcrumb (aggregated view header). Space sticker → first crumb
+       12px; whole breadcrumb 18px. Hidden inside a space, where the breadcrumb
+       lives in the top bar instead. */
+    .pim-crumbbar {
+      align-items: center;
+      display: flex;
+      gap: var(--spacing-4);
+      padding: var(--spacing-4) var(--spacing-6);
+    }
+    .pim-crumbbar .breadcrumb { flex: 1; min-width: 0; font-size: var(--font-size-lg); }
+    body.in-space .pim-crumbbar { display: none; }
+
+    /* Toolbar tree-view toggle marked while the Browse panel is open. Uses the
+       Lexicon borderless pressed fill (--color-light-d1), not a primary tint. */
+    #bp-toggle.is-active { background: var(--color-light-d1); }
+
+    /* Table scroll region + cell helpers. */
+    .pim-table-wrap { flex: 1; overflow: auto; padding: 0 var(--spacing-6); }
+    .pim-sku { align-items: center; display: flex; gap: var(--spacing-3); }
+    /* Product icon used for the Parent-Product leaves in the Browse tree
+       (a brand asset, referenced as an <img> like the product photos). */
+    img.tree__icon { width: var(--spacing-5); height: var(--spacing-5); }
+    /* Optional product-icon marker in the bottom-right of a Parent-Product
+       photo. At 12px it reads as a marker, not a legible icon; the white ring
+       lifts it off the photo. */
+    .pim-thumb-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
+    .pim-thumb-badge {
+      position: absolute;
+      right: calc(-1 * var(--spacing-1));
+      bottom: calc(-1 * var(--spacing-1));
+      width: var(--spacing-4);
+      height: var(--spacing-4);
+      border-radius: var(--rounded-sm);
+      background: var(--color-white);
+      box-shadow: 0 0 0 var(--spacing-1) var(--color-white);
+    }
+    .pim-space, .pim-author { align-items: center; display: inline-flex; gap: var(--spacing-2); }
+    .pim-author .lexicon-icon { color: var(--color-secondary); }
+    .table__sort { color: var(--color-secondary-l1); margin-left: var(--spacing-1); vertical-align: middle; }
+    .pim-badge { margin-left: var(--spacing-3); }
+    /* Rows that drill into a space / product on click. */
+    .pim-row-nav { cursor: pointer; }
+    .pim-row-nav:hover { background: var(--color-light); }
+
+    .pim-pagination { border-top: 1px solid var(--color-secondary-l3); padding: var(--spacing-3) var(--spacing-6); }
+
+    /* ── Space home ─────────────────────────────────────────────
+       Shown when a SPACES item is opened (body.is-home). The data-set
+       toolbar / table / pagination are hidden in that mode, and vice-versa. */
+    .space-home { display: none; padding: var(--spacing-6); overflow-y: auto; }
+    body.is-home .space-home { display: block; }
+    body.is-home .management-toolbar,
+    body.is-home .pim-table-wrap,
+    body.is-home .pim-pagination { display: none; }
+
+    .space-home__grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      gap: var(--spacing-5);
+    }
+    @media (max-width: 900px) { .space-home__grid { grid-template-columns: minmax(0, 1fr); } }
+
+    .home-card {
+      background: var(--color-white);
+      border: 1px solid var(--color-secondary-l2);
+      border-radius: var(--rounded-lg);
+      margin-bottom: var(--spacing-5);
+      padding: var(--spacing-5);
+    }
+    .home-card__head {
+      align-items: center;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-3);
+    }
+    .home-card__title { color: var(--color-dark); font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); margin: 0; }
+    .home-card__actions { align-items: center; display: inline-flex; gap: var(--spacing-2); }
+    .home-card__link { color: var(--color-primary); font-size: var(--font-size-base); text-decoration: none; white-space: nowrap; }
+    .home-card__link:hover { text-decoration: underline; }
+
+    .home-list { list-style: none; margin: 0; padding: 0; }
+    .home-list__row {
+      align-items: center;
+      border-top: 1px solid var(--color-secondary-l3);
+      display: flex;
+      gap: var(--spacing-3);
+      padding: var(--spacing-3) 0;
+    }
+    .home-list__row:first-child { border-top: 0; }
+    .home-list__icon { color: var(--color-secondary); flex-shrink: 0; }
+    .home-list__body { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+    .home-list__name { color: var(--color-dark); font-weight: var(--font-weight-semi); text-decoration: none; }
+    .home-list__meta { color: var(--color-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); }
+
+    .home-files { display: grid; gap: var(--spacing-4); grid-template-columns: repeat(3, minmax(0, 1fr)); list-style: none; margin: 0; padding: 0; }
+    .home-file { display: flex; flex-direction: column; gap: var(--spacing-1); }
+    .home-file__thumb {
+      align-items: center;
+      background: var(--color-light);
+      border-radius: var(--rounded-md);
+      display: flex;
+      height: calc(var(--spacing-10) * 2);
+      justify-content: center;
+      margin-bottom: var(--spacing-1);
+    }
+    .home-file__thumb .lexicon-icon { color: var(--color-secondary); height: var(--spacing-8); width: var(--spacing-8); }
+    .home-file__name { color: var(--color-dark); font-size: var(--font-size-sm); font-weight: var(--font-weight-semi); overflow: hidden; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+    .home-file__date { color: var(--color-secondary); font-size: var(--font-size-sm); }
+    .home-file .label { align-self: flex-start; }
+
+    .home-tabs { margin-bottom: var(--spacing-2); }
+    .home-member__avatar { color: var(--color-secondary); }
+    .space-home .empty-state { padding: var(--spacing-5) 0; }
+
+    /* ── Modern thin scrollbars ─────────────────────────────── */
+    .control-panel__body, .browse-panel__body, .pim-content, .pim-table-wrap {
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-secondary-l2) transparent;
+    }
+    .control-panel__body::-webkit-scrollbar,
+    .browse-panel__body::-webkit-scrollbar,
+    .pim-content::-webkit-scrollbar,
+    .pim-table-wrap::-webkit-scrollbar { width: var(--spacing-3); height: var(--spacing-3); }
+    .control-panel__body::-webkit-scrollbar-thumb,
+    .browse-panel__body::-webkit-scrollbar-thumb,
+    .pim-content::-webkit-scrollbar-thumb,
+    .pim-table-wrap::-webkit-scrollbar-thumb {
+      background: var(--color-secondary-l2);
+      background-clip: padding-box;
+      border: var(--spacing-1) solid transparent;
+      border-radius: var(--rounded-full);
+    }
+
+    /* Scroll shadow on the panel header edge while the nav is clipped. */
+    .control-panel__header { position: relative; z-index: 1; transition: box-shadow 150ms ease; }
+    #control-panel.is-clipped-top .control-panel__header { box-shadow: var(--shadow-scroll-top); }
+
+    /* ── Compact chrome (≤767px) ─────────────────────────────────
+       Only the chrome band compacts on narrow widths. The docked layout
+       is kept at every width (the sidebar always reserves its space) so
+       the Browse panel is never overlaid or hidden — content just narrows
+       and the table scrolls. Collapse Browse with the toolbar tree-view
+       toggle when space is tight. (An earlier version dropped the pinned
+       margin and absolutely-positioned the panel, which made it vanish
+       behind the sidebar in a narrow/docked pane — "va en blanco".) */
+    @media (max-width: 767px) {
+      :root { --cp-chrome-h: calc(var(--spacing-8) + 2 * var(--spacing-2-5)); }
+      .control-menu { padding-left: var(--spacing-3); padding-right: var(--spacing-3); }
+      .control-panel--floating .control-panel__header { padding: 0 var(--spacing-3) 0 var(--spacing-10); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .control-panel--floating, main, .cm-crumb, .browse-panel { transition: none; }
+    }
+  </style>
+</head>
+<body class="sb-pinned">
+
+<!-- ════════════════════════════════════════════════════════════════
+     PIM screen — docked Control Panel (left nav) + Browse by Space
+     contextual panel + product Data Set.
+
+     Interaction notes:
+       • Top-bar toggle pins/unpins the left Control Panel (peek on hover).
+       • The Browse by Space panel is a second, collapsible column. Its
+         visibility is driven by the TREE-VIEW icon in the Data Set
+         management toolbar (#bp-toggle) — open by default.
+       • Every node in the Browse tree is selectable and drives the
+         breadcrumb; the caret toggles expand/collapse independently.
+     ════════════════════════════════════════════════════════════════ -->
+
+<!-- ─── Control Menu (top bar, full width) ─────────────────────────── -->
+<div class="control-menu">
+  <div class="control-menu__left">
+    <div class="control-menu__btns">
+      <button class="control-menu__btn" id="cp-toggle" type="button" aria-label="Close menu" aria-expanded="true" aria-controls="control-panel">
+        <svg class="lexicon-icon" id="cp-toggle-icon"><use href="#product-menu-open"></use></svg>
+      </button>
+    </div>
+    <!-- Breadcrumb = the Data Set's location + navigation spine (rebuilt by JS).
+         The Data Set below has no header of its own. -->
+    <nav class="cm-crumb" aria-label="Breadcrumb">
+      <span class="sticker sticker--outline sticker--space" id="crumb-sticker" aria-hidden="true">M</span>
+      <ol class="breadcrumb" id="crumb-ol"></ol>
+    </nav>
+  </div>
+  <div class="control-menu__right">
+    <button class="control-menu__btn" type="button" aria-label="Applications">
+      <svg class="lexicon-icon"><use href="#grid"></use></svg>
+    </button>
+    <button class="cm-avatar" type="button" aria-label="User menu">
+      <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=72&h=72&fit=crop&auto=format" alt="">
+    </button>
+  </div>
+</div>
+
+<!-- ─── Docked Control Panel (left nav) ────────────────────────────── -->
+<aside class="control-panel control-panel--floating" id="control-panel" tabindex="-1">
+
+  <div class="control-panel__header">
+    <span class="control-panel__title">Liferay PIM</span>
+    <div class="control-panel__actions">
+      <button class="btn btn--borderless btn--sm btn--icon control-panel__close" id="cp-close" type="button" aria-label="Close">
+        <svg class="lexicon-icon"><use href="#times"></use></svg>
+      </button>
+      <button class="btn btn--borderless btn--sm btn--icon" id="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+        <svg class="lexicon-icon" id="theme-icon"><use href="#moon"></use></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="control-panel__body">
+    <ul class="control-panel__groups">
+
+      <!-- Top-level items (no group header) -->
+      <li class="control-panel__group">
+        <button class="control-panel__item" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#home"></use></svg></span>
+          Home
+        </button>
+        <button class="control-panel__item" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#analytics"></use></svg></span>
+          Dashboard
+        </button>
+        <button class="control-panel__item" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#share"></use></svg></span>
+          Shared with Me
+        </button>
+      </li>
+
+      <!-- ASSETS -->
+      <li class="control-panel__group">
+        <button class="control-panel__group-header" type="button" aria-expanded="true">
+          Assets
+          <svg class="lexicon-icon"><use href="#angle-down-small"></use></svg>
+        </button>
+        <button class="control-panel__item" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#catalog"></use></svg></span>
+          All
+        </button>
+        <button class="control-panel__item" data-section="content" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#documents-and-media"></use></svg></span>
+          Contents
+        </button>
+        <button class="control-panel__item" data-section="files" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#document-text"></use></svg></span>
+          Files
+        </button>
+        <button class="control-panel__item is-active" id="nav-products" data-nav="All Products" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#products"></use></svg></span>
+          Products
+        </button>
+      </li>
+
+      <!-- ADMIN -->
+      <li class="control-panel__group">
+        <button class="control-panel__group-header" type="button" aria-expanded="true">
+          Admin
+          <svg class="lexicon-icon"><use href="#angle-down-small"></use></svg>
+        </button>
+        <button class="control-panel__item" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#page-template"></use></svg></span>
+          Content Structures
+        </button>
+        <button class="control-panel__item" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#categories"></use></svg></span>
+          Categorization
+        </button>
+        <button class="control-panel__item" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#plug"></use></svg></span>
+          Connectors
+        </button>
+      </li>
+
+      <!-- SPACES -->
+      <li class="control-panel__group">
+        <button class="control-panel__group-header" type="button" aria-expanded="true">
+          Spaces
+          <svg class="lexicon-icon"><use href="#angle-down-small"></use></svg>
+        </button>
+        <button class="control-panel__item" data-home="minium" type="button">
+          <span class="control-panel__item-icon"><span class="sticker sticker--outline sticker--space" style="--sc:#E1308F" aria-hidden="true">M</span></span>
+          Minium Apparel
+        </button>
+        <button class="control-panel__item" data-home="classic" type="button">
+          <span class="control-panel__item-icon"><span class="sticker sticker--outline sticker--space" style="--sc:#E0A128" aria-hidden="true">C</span></span>
+          Classic Apparel
+        </button>
+        <button class="control-panel__item" data-home="speedwell" type="button">
+          <span class="control-panel__item-icon"><span class="sticker sticker--outline sticker--space" style="--sc:#3FA455" aria-hidden="true">S</span></span>
+          Speedwell Apparel
+        </button>
+      </li>
+
+      <!-- Utility items -->
+      <li class="control-panel__group">
+        <button class="control-panel__item" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#list-ul"></use></svg></span>
+          All Spaces (1)
+        </button>
+        <button class="control-panel__item" type="button">
+          <span class="control-panel__item-icon"><svg class="lexicon-icon"><use href="#trash"></use></svg></span>
+          Recycle bin
+        </button>
+      </li>
+
+    </ul>
+  </div><!-- /control-panel__body -->
+</aside>
+
+<!-- ─── Main: Browse by Space + product Data Set ───────────────────── -->
+<main>
+
+  <!-- Browse by Space (collapsible contextual panel) -->
+  <aside class="browse-panel" id="browse-panel" aria-label="Browse by Space">
+    <div class="browse-panel__header">
+      <h2 class="browse-panel__title">Browse by Space</h2>
+    </div>
+    <div class="browse-panel__body">
+      <ul class="tree" role="tree" id="browse-tree">
+
+        <li role="treeitem">
+          <div class="tree__row" data-crumb="All Products">
+            <svg class="lexicon-icon tree__icon"><use href="#products"></use></svg>
+            <span class="tree__label">All Products</span>
+          </div>
+        </li>
+
+        <li role="treeitem" aria-expanded="true">
+          <div class="tree__row" data-crumb="Minium Apparel">
+            <button class="tree__toggle" aria-label="Collapse"><svg class="lexicon-icon"><use href="#caret-bottom"></use></svg></button>
+            <span class="sticker sticker--outline sticker--space" style="--sc:#E1308F" aria-hidden="true">M</span>
+            <span class="tree__label">Minium Apparel</span>
+          </div>
+          <ul role="group">
+            <li role="treeitem">
+              <div class="tree__row is-active" data-crumb="Lebron Shorts">
+                <button class="tree__toggle tree__toggle--placeholder" aria-hidden="true"></button>
+                <img class="tree__icon" src="img/icon-product.svg" alt="" width="16" height="16">
+                <span class="tree__label">Lebron Shorts</span>
+              </div>
+            </li>
+          </ul>
+        </li>
+
+        <li role="treeitem" aria-expanded="false">
+          <div class="tree__row" data-crumb="Classic Apparel">
+            <button class="tree__toggle" aria-label="Expand"><svg class="lexicon-icon"><use href="#caret-right"></use></svg></button>
+            <span class="sticker sticker--outline sticker--space" style="--sc:#E0A128" aria-hidden="true">C</span>
+            <span class="tree__label">Classic Apparel</span>
+          </div>
+          <ul role="group" hidden>
+            <li role="treeitem">
+              <div class="tree__row" data-crumb="Air Jordan">
+                <button class="tree__toggle tree__toggle--placeholder" aria-hidden="true"></button>
+                <img class="tree__icon" src="img/icon-product.svg" alt="" width="16" height="16">
+                <span class="tree__label">Air Jordan</span>
+              </div>
+            </li>
+          </ul>
+        </li>
+
+        <li role="treeitem" aria-expanded="false">
+          <div class="tree__row" data-crumb="Speedwell Apparel">
+            <button class="tree__toggle" aria-label="Expand"><svg class="lexicon-icon"><use href="#caret-right"></use></svg></button>
+            <span class="sticker sticker--outline sticker--space" style="--sc:#3FA455" aria-hidden="true">S</span>
+            <span class="tree__label">Speedwell Apparel</span>
+          </div>
+          <ul role="group" hidden>
+            <li role="treeitem">
+              <div class="tree__row" data-crumb="Track Pro">
+                <button class="tree__toggle tree__toggle--placeholder" aria-hidden="true"></button>
+                <img class="tree__icon" src="img/icon-product.svg" alt="" width="16" height="16">
+                <span class="tree__label">Track Pro</span>
+              </div>
+            </li>
+          </ul>
+        </li>
+
+      </ul>
+    </div>
+  </aside>
+
+  <!-- Product Data Set -->
+  <div class="pim-content">
+
+    <!-- Data-set breadcrumb (aggregated view only; hidden inside a space, where
+         the breadcrumb lives in the top bar). Interacting with a space crumb
+         here navigates the side menu to that space. Rebuilt by JS. -->
+    <div class="pim-crumbbar">
+      <span class="sticker sticker--outline sticker--space" id="ds-crumb-sticker" aria-hidden="true">M</span>
+      <ol class="breadcrumb" id="ds-crumb-ol"></ol>
+      <button class="btn btn--borderless btn--sm btn--icon" type="button" aria-label="More actions">
+        <svg class="lexicon-icon"><use href="#ellipsis-v"></use></svg>
+      </button>
+    </div>
+
+    <!-- Management toolbar -->
+    <div class="management-toolbar">
+      <div class="management-toolbar__bar">
+
+        <label class="checkbox" aria-label="Select all">
+          <input type="checkbox" class="checkbox__input">
+          <span class="checkbox__box">
+            <svg class="checkbox__icon checkbox__icon--check"><use href="#check-small"></use></svg>
+            <svg class="checkbox__icon checkbox__icon--hr"><use href="#hr"></use></svg>
+          </span>
+        </label>
+
+        <!-- Tree-view toggle → controls the Browse by Space panel -->
+        <button class="btn btn--borderless btn--sm btn--icon is-active" id="bp-toggle" type="button" aria-label="Toggle Browse by Space" aria-pressed="true" aria-controls="browse-panel">
+          <svg class="lexicon-icon"><use href="#hierarchy"></use></svg>
+        </button>
+
+        <button class="btn btn--borderless btn--sm" type="button">
+          <svg class="lexicon-icon"><use href="#filter"></use></svg>
+          Filter
+          <svg class="lexicon-icon"><use href="#caret-bottom"></use></svg>
+        </button>
+
+        <div class="management-toolbar__search">
+          <div class="search">
+            <input class="input__field search__field" type="search" placeholder="Search">
+            <button class="search__clear" aria-label="Clear" hidden type="button">
+              <svg class="lexicon-icon"><use href="#times-circle-full"></use></svg>
+            </button>
+            <button class="search__submit" aria-label="Search" type="button">
+              <svg class="lexicon-icon"><use href="#search"></use></svg>
+            </button>
+          </div>
+        </div>
+
+        <button class="btn btn--borderless btn--sm" type="button" aria-label="Switch view">
+          <svg class="lexicon-icon"><use href="#list"></use></svg>
+          <svg class="lexicon-icon"><use href="#caret-double"></use></svg>
+        </button>
+
+        <button class="btn btn--primary btn--sm" type="button">
+          New
+          <svg class="lexicon-icon"><use href="#caret-bottom"></use></svg>
+        </button>
+
+        <button class="btn btn--borderless btn--sm btn--icon" type="button" aria-label="Info">
+          <svg class="lexicon-icon"><use href="#info-circle-open"></use></svg>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Data-set table — whole thead + tbody rendered by JS per section
+         (Products / Content / Files have different columns). -->
+    <div class="pim-table-wrap">
+      <table class="table" id="pim-table"></table>
+    </div>
+
+    <!-- Pagination -->
+    <nav class="pagination pim-pagination" aria-label="Pagination">
+      <button class="pagination__size btn btn--borderless btn--sm">
+        10 Items <svg class="lexicon-icon"><use href="#caret-bottom"></use></svg>
+      </button>
+      <span class="pagination__summary" id="pim-summary">Showing 1 to 5 of 5 entries.</span>
+      <ul class="pagination__pages">
+        <li><button class="pagination__btn" aria-label="Previous"><svg class="lexicon-icon"><use href="#angle-left"></use></svg></button></li>
+        <li><button class="pagination__btn is-active" aria-current="page">1</button></li>
+        <li><button class="pagination__btn" aria-label="Next"><svg class="lexicon-icon"><use href="#angle-right"></use></svg></button></li>
+      </ul>
+    </nav>
+
+    <!-- ─── Space home (shown when a SPACES item is opened; body.is-home) ─────
+         Widgets replicate the Liferay CMS space home: Content, Files, Members,
+         Websites. Header sticker + name are set by JS per space. -->
+    <section class="space-home" id="space-home" aria-label="Space home">
+      <div class="space-home__grid">
+        <div class="space-home__col">
+
+          <!-- Products widget (the PIM reason for all this) -->
+          <section class="home-card">
+            <header class="home-card__head">
+              <h2 class="home-card__title">Products</h2>
+              <span class="home-card__actions">
+                <a href="#" class="home-card__link" id="home-view-products">View all products</a>
+                <button class="btn btn--borderless btn--sm btn--icon" type="button" aria-label="Add product"><svg class="lexicon-icon"><use href="#plus"></use></svg></button>
+              </span>
+            </header>
+            <ul class="home-list" id="home-products"></ul>
+          </section>
+
+          <!-- Content widget -->
+          <section class="home-card">
+            <header class="home-card__head">
+              <h2 class="home-card__title">Content</h2>
+              <span class="home-card__actions">
+                <a href="#" class="home-card__link" id="home-view-content">View all content</a>
+                <button class="btn btn--borderless btn--sm btn--icon" type="button" aria-label="Add content"><svg class="lexicon-icon"><use href="#plus"></use></svg></button>
+              </span>
+            </header>
+            <ul class="home-list" id="home-content"></ul>
+          </section>
+
+          <!-- Files widget -->
+          <section class="home-card">
+            <header class="home-card__head">
+              <h2 class="home-card__title">Files</h2>
+              <span class="home-card__actions">
+                <a href="#" class="home-card__link" id="home-view-files">View all files</a>
+                <button class="btn btn--borderless btn--sm btn--icon" type="button" aria-label="Add file"><svg class="lexicon-icon"><use href="#plus"></use></svg></button>
+              </span>
+            </header>
+            <ul class="home-files" id="home-files-list"></ul>
+          </section>
+
+        </div>
+
+        <div class="space-home__col space-home__col--side">
+
+          <!-- Members widget -->
+          <section class="home-card">
+            <header class="home-card__head">
+              <h2 class="home-card__title">Members (1)</h2>
+              <a href="#" class="home-card__link">View all members</a>
+            </header>
+            <nav class="tabs home-tabs" role="tablist">
+              <button class="tabs__tab is-active" role="tab" aria-selected="true" type="button">Users</button>
+              <button class="tabs__tab" role="tab" type="button">User Groups</button>
+            </nav>
+            <ul class="home-list" id="home-members"></ul>
+          </section>
+
+          <!-- Websites widget -->
+          <section class="home-card">
+            <header class="home-card__head">
+              <h2 class="home-card__title">Websites (0)</h2>
+            </header>
+            <div class="empty-state empty-state--sm">
+              <h3 class="empty-state__title">No sites connected yet</h3>
+              <p class="empty-state__text">Connect sites to this space.</p>
+              <button class="btn btn--secondary btn--sm" type="button">Connect sites</button>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /pim-content -->
+</main>
+
+<!-- ─── Scripts ─────────────────────────────────────────────────────── -->
+
+<!-- Collapsible Control Panel groups (chevron rotates, items hide) -->
+<script>
+  (function () {
+    document.querySelectorAll('.control-panel__group-header').forEach(function (btn) {
+      var chevron = btn.querySelector('svg.lexicon-icon:last-child');
+      if (chevron) chevron.style.transition = 'transform 150ms ease';
+      var group = btn.parentElement;
+      var items = group ? Array.from(group.querySelectorAll('.control-panel__item')) : [];
+      if (btn.getAttribute('aria-expanded') === 'false') {
+        items.forEach(function (el) { el.style.display = 'none'; });
+        if (chevron) chevron.style.transform = 'rotate(-90deg)';
+      }
+      btn.addEventListener('click', function () {
+        var next = btn.getAttribute('aria-expanded') === 'false';
+        btn.setAttribute('aria-expanded', String(next));
+        items.forEach(function (el) { el.style.display = next ? '' : 'none'; });
+        if (chevron) chevron.style.transform = next ? '' : 'rotate(-90deg)';
+      });
+    });
+  })();
+</script>
+
+<!-- Pin / peek behaviour for the docked Control Panel -->
+<script>
+  (function () {
+    var body = document.body;
+    var toggle = document.getElementById('cp-toggle');
+    var toggleIcon = document.getElementById('cp-toggle-icon');
+    var panel = document.getElementById('control-panel');
+    var close = document.getElementById('cp-close');
+    var hideTimer = null;
+
+    function pinned() { return body.classList.contains('sb-pinned'); }
+    function setIcon() {
+      var use = toggleIcon && toggleIcon.querySelector('use');
+      if (use) use.setAttribute('href', pinned() ? '#product-menu-open' : '#product-menu-closed');
+      var label = pinned() ? 'Close menu' : 'Pin menu';
+      toggle.setAttribute('aria-label', label);
+    }
+    function setPinned(on) {
+      body.classList.toggle('sb-pinned', on);
+      if (on) body.classList.remove('sb-peek');
+      toggle.setAttribute('aria-expanded', String(on));
+      setIcon();
+    }
+    function peek(on) { if (!pinned()) body.classList.toggle('sb-peek', on); }
+    function scheduleHide() { clearTimeout(hideTimer); hideTimer = setTimeout(function () { peek(false); }, 250); }
+    function cancelHide() { clearTimeout(hideTimer); }
+
+    [toggle, panel].forEach(function (el) {
+      el.addEventListener('mouseenter', function () { cancelHide(); peek(true); });
+      el.addEventListener('mouseleave', scheduleHide);
+    });
+    toggle.addEventListener('click', function (e) {
+      if (pinned()) {
+        setPinned(false);
+        if (toggle.matches(':hover') || panel.matches(':hover')) body.classList.add('sb-peek');
+      } else {
+        setPinned(true);
+        if (e.detail === 0) panel.focus();
+      }
+    });
+    close.addEventListener('click', function (e) {
+      setPinned(false); body.classList.remove('sb-peek');
+      if (e.detail === 0) toggle.focus();
+    });
+    panel.addEventListener('focusin', function () { cancelHide(); peek(true); });
+    panel.addEventListener('focusout', function (e) { if (!panel.contains(e.relatedTarget)) scheduleHide(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && body.classList.contains('sb-peek')) peek(false);
+    });
+    setIcon();
+  })();
+</script>
+
+<!-- Browse by Space: toolbar tree-view icon toggles panel visibility -->
+<script>
+  (function () {
+    var body = document.body;
+    var btn = document.getElementById('bp-toggle');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var collapsed = body.classList.toggle('bp-collapsed');
+      var open = !collapsed;
+      btn.classList.toggle('is-active', open);
+      btn.setAttribute('aria-pressed', String(open));
+    });
+  })();
+</script>
+
+<!-- Browse tree: caret expands (independent); selecting any node drives the
+     breadcrumb AND swaps the product Data Set (rows / thumbnail / meta). -->
+<script>
+  (function () {
+    var tree = document.getElementById('browse-tree');
+    var summary = document.getElementById('pim-summary');
+    var sticker = document.getElementById('crumb-sticker');   // top-bar breadcrumb
+    var ol = document.getElementById('crumb-ol');
+    var dsSticker = document.getElementById('ds-crumb-sticker'); // data-set breadcrumb
+    var dsOl = document.getElementById('ds-crumb-ol');
+    var table = document.getElementById('pim-table');
+    var tableWrap = document.querySelector('.pim-table-wrap');
+    if (!tree || !table) return;
+
+    // ── Fabricated PIM data (a watch, shorts and shoes across 3 spaces) ──
+    var SPACES = {
+      minium:    { code: 'M', color: '#E1308F', name: 'Minium Apparel' },
+      classic:   { code: 'C', color: '#E0A128', name: 'Classic Apparel' },
+      speedwell: { code: 'S', color: '#3FA455', name: 'Speedwell Apparel' }
+    };
+    var PRODUCTS = {
+      'Lebron Shorts': {
+        space: 'minium', title: 'Lebron Short', type: 'Shorts', author: 'Amanda',
+        modified: '3 Minutes Ago', thumb: { img: 'img/lebron-short-red.png' },
+        skus: ['LebronShortRedXS', 'LebronShortRedS', 'LebronShortRedM', 'LebronShortRedL', 'LebronShortRedXL']
+      },
+      'Track Pro': {
+        space: 'speedwell', title: 'Track Pro', type: 'Watch', author: 'Marco',
+        modified: '12 Minutes Ago', thumb: { img: 'img/track-pro.webp' },
+        skus: ['TrackProLavaRed', 'TrackProAllBlack', 'TrackProSummitWhite', 'TrackProOceanBlue']
+      },
+      'Air Jordan': {
+        space: 'classic', title: 'Air Jordan', type: 'Shoes', author: 'Chris',
+        modified: '1 Hour Ago', thumb: { img: 'img/air-jordan.jpg' },
+        skus: ['AirJordanBredToe42', 'AirJordanBredToe43', 'AirJordanBredToe44']
+      }
+    };
+    // Each Browse node → which products it lists + how its breadcrumb reads.
+    var VIEWS = {
+      'All Products':      { products: ['Lebron Shorts', 'Air Jordan', 'Track Pro'], space: null,        leaf: null },
+      'Minium Apparel':    { products: ['Lebron Shorts'],                            space: 'minium',    leaf: null },
+      'Classic Apparel':   { products: ['Air Jordan'],                              space: 'classic',   leaf: null },
+      'Speedwell Apparel': { products: ['Track Pro'],                                space: 'speedwell', leaf: null },
+      'Lebron Shorts':     { products: ['Lebron Shorts'],                            space: 'minium',    leaf: 'Lebron Shorts' },
+      'Air Jordan':        { products: ['Air Jordan'],                              space: 'classic',   leaf: 'Air Jordan' },
+      'Track Pro':         { products: ['Track Pro'],                                space: 'speedwell', leaf: 'Track Pro' }
+    };
+
+    var CHECKBOX = '<label class="checkbox" aria-label="Select row"><input type="checkbox" class="checkbox__input"><span class="checkbox__box"><svg class="checkbox__icon checkbox__icon--check"><use href="#check-small"></use></svg><svg class="checkbox__icon checkbox__icon--hr"><use href="#hr"></use></svg></span></label>';
+    var SELECT_ALL = '<label class="checkbox" aria-label="Select all"><input type="checkbox" class="checkbox__input"><span class="checkbox__box"><svg class="checkbox__icon checkbox__icon--check"><use href="#check-small"></use></svg><svg class="checkbox__icon checkbox__icon--hr"><use href="#hr"></use></svg></span></label>';
+    var SEP = '<svg class="lexicon-icon breadcrumb__sep"><use href="#angle-right"></use></svg>';
+
+    // Aggregated Content & Files rows (across spaces). Content/Files are
+    // aggregated ASSETS views WITHOUT a Browse panel — columns: Title · Type ·
+    // Space · Author · Modified · Revision Date · Status.
+    var CONTENT_ROWS = [
+      { icon: '#web-content', name: 'Spring Campaign 2026', type: 'Basic Web Content', space: 'minium',    author: 'Amanda', modified: '3 Minutes Ago', revised: '—', status: { label: 'Draft', tone: 'secondary' } },
+      { icon: '#folder',      name: 'Lookbooks',            type: 'Folder',            space: 'minium',    author: 'Amanda', modified: '2 Hours Ago',   revised: '—', status: null },
+      { icon: '#web-content', name: 'Size & Fit Guide',     type: 'Basic Web Content', space: 'classic',   author: 'Chris',  modified: 'Yesterday',     revised: 'Aug 5, 2026', status: { label: 'Approved', tone: 'success' } },
+      { icon: '#web-content', name: 'Race Day Stories',     type: 'Basic Web Content', space: 'speedwell', author: 'Marco',  modified: '3 days ago',    revised: 'Aug 3, 2026', status: { label: 'Approved', tone: 'success' } },
+      { icon: '#folder',      name: 'Retro Archive',        type: 'Folder',            space: 'classic',   author: 'Chris',  modified: 'Aug 4, 2026',   revised: '—', status: null },
+      { icon: '#folder',      name: 'Athlete Bios',         type: 'Folder',            space: 'speedwell', author: 'Marco',  modified: 'Aug 2, 2026',   revised: '—', status: null }
+    ];
+    var FILES_ROWS = [
+      { icon: '#document', name: 'air-jordan-hero.png',  type: 'Basic Document', space: 'classic',   author: 'Chris',  modified: '13:24', revised: '—', status: { label: 'Approved', tone: 'success' } },
+      { icon: '#document', name: 'minium-logo.svg',      type: 'Basic Document', space: 'minium',    author: 'Amanda', modified: '13:24', revised: '—', status: { label: 'Approved', tone: 'success' } },
+      { icon: '#document', name: 'size-guide.pdf',       type: 'Basic Document', space: 'minium',    author: 'Amanda', modified: '13:23', revised: '—', status: { label: 'Draft', tone: 'secondary' } },
+      { icon: '#document', name: 'track-pro-banner.png', type: 'Basic Document', space: 'speedwell', author: 'Marco',  modified: 'Yesterday', revised: '—', status: { label: 'Approved', tone: 'success' } },
+      { icon: '#document', name: 'sizing-chart.pdf',     type: 'Basic Document', space: 'classic',   author: 'Chris',  modified: '11:02', revised: '—', status: { label: 'Approved', tone: 'success' } },
+      { icon: '#document', name: 'spec-sheet.pdf',       type: 'Basic Document', space: 'speedwell', author: 'Marco',  modified: '09:30', revised: '—', status: { label: 'Approved', tone: 'success' } }
+    ];
+
+    // Build a table <thead> from a column list ({label, sort}); the leading
+    // select-all checkbox gutter and the trailing column-config gutter are added.
+    function buildThead(cols) {
+      var ths = cols.map(function (c) {
+        return '<th>' + c.label + (c.sort ? ' <svg class="lexicon-icon lexicon-icon-sm table__sort"><use href="#caret-double"></use></svg>' : '') + '</th>';
+      }).join('');
+      return '<thead><tr><th class="table__cell--gutter">' + SELECT_ALL + '</th>' + ths
+        + '<th class="table__cell--gutter"><button class="btn btn--borderless btn--sm btn--icon" type="button" aria-label="Columns"><svg class="lexicon-icon"><use href="#caret-bottom"></use></svg></button></th></tr></thead>';
+    }
+    // A Content/Files row (icon + name, then the shared asset columns).
+    function assetRow(r) {
+      return '<tr><td class="table__cell--gutter">' + CHECKBOX + '</td>'
+        + '<td><span class="pim-sku"><span class="sticker sticker--md sticker--icon"><svg class="lexicon-icon"><use href="' + r.icon + '"></use></svg></span><a href="#" class="table__title">' + r.name + '</a></span></td>'
+        + '<td>' + r.type + '</td>'
+        + '<td>' + spaceCell(SPACES[r.space]) + '</td>'
+        + '<td><span class="pim-author"><svg class="lexicon-icon"><use href="#user"></use></svg> ' + r.author + '</span></td>'
+        + '<td>' + r.modified + '</td>'
+        + '<td>' + r.revised + '</td>'
+        + '<td>' + (r.status ? '<span class="label label--sm label--' + r.status.tone + '">' + r.status.label + '</span>' : '') + '</td>'
+        + '<td class="table__cell--gutter"><button class="btn btn--borderless btn--sm btn--icon" aria-label="More"><svg class="lexicon-icon"><use href="#ellipsis-v"></use></svg></button></td></tr>';
+    }
+
+    // ── Space-home widget rows (per space) ──
+    var KEBAB = '<button class="btn btn--borderless btn--sm btn--icon" aria-label="More"><svg class="lexicon-icon"><use href="#ellipsis-v"></use></svg></button>';
+    function homeProductRow(name) {
+      var p = PRODUCTS[name];
+      var thumb = p.thumb.img
+        ? '<span class="sticker sticker--md"><img src="' + p.thumb.img + '" alt=""></span>'
+        : '<span class="sticker sticker--md sticker--icon"><svg class="lexicon-icon"><use href="' + p.thumb.icon + '"></use></svg></span>';
+      return '<li class="home-list__row">' + thumb
+        + '<span class="home-list__body"><a href="#" class="home-list__name">' + name + '</a>'
+        + '<span class="home-list__meta">' + p.skus.length + ' SKUs · ' + p.type + '</span></span>' + KEBAB + '</li>';
+    }
+    function homeContentRow(r) {
+      var meta = (r.icon === '#folder') ? '0 articles · 0 folders' : 'Modified ' + r.modified.toLowerCase() + ' by ' + r.author;
+      return '<li class="home-list__row"><svg class="lexicon-icon home-list__icon"><use href="' + r.icon + '"></use></svg>'
+        + '<span class="home-list__body"><a href="#" class="home-list__name">' + r.name + '</a>'
+        + '<span class="home-list__meta">' + meta + '</span></span>' + KEBAB + '</li>';
+    }
+    function homeFileCard(r) {
+      var isImg = /\.(png|jpe?g|svg|webp)$/i.test(r.name);
+      return '<li class="home-file"><span class="home-file__thumb"><svg class="lexicon-icon"><use href="' + (isImg ? '#picture' : '#document') + '"></use></svg></span>'
+        + '<a href="#" class="home-file__name">' + r.name + '</a><span class="home-file__date">Aug 7, 2026</span>'
+        + (r.status ? '<span class="label label--sm label--' + r.status.tone + '">' + r.status.label + '</span>' : '') + '</li>';
+    }
+    function homeMemberRow(name) {
+      return '<li class="home-list__row"><span class="sticker sticker--circle sticker--icon home-member__avatar"><svg class="lexicon-icon"><use href="#user"></use></svg></span>'
+        + '<span class="home-list__body"><span class="home-list__name">' + name + ' <span class="home-list__meta">(Owner)</span></span></span></li>';
+    }
+
+    function thumbCell(p) {
+      return p.thumb.img
+        ? '<span class="sticker sticker--md"><img src="' + p.thumb.img + '" alt=""></span>'
+        : '<span class="sticker sticker--md sticker--icon"><svg class="lexicon-icon"><use href="' + p.thumb.icon + '"></use></svg></span>';
+    }
+    function spaceCell(sp) {
+      return '<span class="pim-space"><span class="sticker sticker--outline sticker--space" style="--sc:' + sp.color + '" aria-hidden="true">' + sp.code + '</span> ' + sp.name + '</span>';
+    }
+    // Trailing cells shared by both row kinds (Title → actions).
+    function metaCells(p) {
+      return '<td>' + p.title + '</td>'
+        + '<td>' + p.type + '</td>'
+        + '<td>' + spaceCell(SPACES[p.space]) + '</td>'
+        + '<td><span class="pim-author"><svg class="lexicon-icon"><use href="#user"></use></svg> ' + p.author + '</span></td>'
+        + '<td>' + p.modified + '</td>'
+        + '<td><span class="label label--sm label--success">Published</span></td>'
+        + '<td class="table__cell--gutter"><button class="btn btn--borderless btn--sm btn--icon" aria-label="More"><svg class="lexicon-icon"><use href="#ellipsis-v"></use></svg></button></td>';
+    }
+    // A SKU-level row (a variant inside a Parent Product): first cell = SKU code.
+    function skuRow(sku, p, isPrimary) {
+      return '<tr><td class="table__cell--gutter">' + CHECKBOX + '</td>'
+        + '<td><span class="pim-sku">' + thumbCell(p) + '<a href="#" class="table__title">' + sku + '</a>'
+          + (isPrimary ? '<span class="label label--sm label--warning pim-badge">Primary</span>' : '') + '</span></td>'
+        + metaCells(p) + '</tr>';
+    }
+    // A Parent-Product row (grouped item): first cell = product name + variant
+    // count; clicking the name drills into the product to reveal its SKUs.
+    function parentThumb(p) {
+      return '<span class="pim-thumb-wrap">' + thumbCell(p)
+        + '<img class="pim-thumb-badge" src="img/icon-product.svg" alt=""></span>';
+    }
+    function parentRow(name, p) {
+      return '<tr class="pim-row-nav" data-product="' + name + '"><td class="table__cell--gutter">' + CHECKBOX + '</td>'
+        + '<td><span class="pim-sku">' + parentThumb(p)
+          + '<a href="#" class="table__title">' + name + '</a>'
+          + '<span class="label label--sm label--secondary pim-badge">' + p.skus.length + ' SKUs</span></span></td>'
+        + metaCells(p) + '</tr>';
+    }
+    // Build a space-rooted breadcrumb into the given <ol>/sticker (used by both
+    // the data-set header and the top bar). The space name and "Products" both
+    // navigate to that space's product list; the leaf (a product) is current.
+    function buildCrumb(olEl, stickerEl, v) {
+      if (v.space) {
+        var sp = SPACES[v.space];
+        stickerEl.style.display = '';
+        stickerEl.style.setProperty('--sc', sp.color);
+        stickerEl.textContent = sp.code;
+        // Space name → the space HOME; "Products" → the space's products root.
+        var space = '<li><a href="#" data-home="' + v.space + '">' + sp.name + '</a>' + SEP + '</li>';
+        olEl.innerHTML = v.leaf
+          ? space + '<li><a href="#" data-nav="' + sp.name + '">Products</a>' + SEP + '</li><li aria-current="page">' + v.leaf + '</li>'
+          : space + '<li aria-current="page">Products</li>';
+      } else {
+        stickerEl.style.display = 'none';
+        olEl.innerHTML = '<li aria-current="page">All Products</li>';
+      }
+    }
+    function renderView(label) {
+      var v = VIEWS[label];
+      if (!v) return;
+      var rows = '', total = 0, firstCol;
+      if (v.leaf) {
+        // Inside a Parent Product → list its SKUs (variants).
+        firstCol = 'SKU';
+        var p = PRODUCTS[v.leaf];
+        p.skus.forEach(function (sku, i) { rows += skuRow(sku, p, i === 0); total++; });
+      } else {
+        // All Products or a space → list Parent Products as grouped items.
+        firstCol = 'Name';
+        v.products.forEach(function (pk) { rows += parentRow(pk, PRODUCTS[pk]); total++; });
+      }
+      var cols = [{ label: firstCol, sort: true }, { label: 'Title', sort: true }, { label: 'Type', sort: true },
+                  { label: 'Space' }, { label: 'Author' }, { label: 'Modified', sort: true }, { label: 'Status' }];
+      table.innerHTML = buildThead(cols) + '<tbody>' + rows + '</tbody>';
+      if (summary) summary.textContent = 'Showing 1 to ' + total + ' of ' + total + ' entries.';
+    }
+    // Content / Files aggregated sections (no Browse panel, no data-set
+    // breadcrumb; the top bar shows the section title).
+    function renderSection(sectionKey, rows) {
+      rows = rows || ((sectionKey === 'files') ? FILES_ROWS : CONTENT_ROWS);
+      var cols = [{ label: 'Title', sort: true }, { label: 'Type', sort: true }, { label: 'Space' },
+                  { label: 'Author' }, { label: 'Modified', sort: true }, { label: 'Revision Date', sort: true }, { label: 'Status' }];
+      table.innerHTML = buildThead(cols) + '<tbody>' + rows.map(assetRow).join('') + '</tbody>';
+      if (summary) summary.textContent = 'Showing 1 to ' + rows.length + ' of ' + rows.length + ' entries.';
+    }
+    // A space-scoped section (Space › Content / Files). No Browse panel; the top
+    // bar shows "Space › Content|Files"; the rows are that space's assets — the
+    // same items shown in the space home's widgets.
+    function openSpaceSection(spaceKey, section) {
+      var sp = SPACES[spaceKey];
+      if (!sp) return;
+      current = null;
+      document.body.classList.remove('no-browse', 'is-home');
+      document.body.classList.add('in-space');
+      clearSidebarActive();
+      var item = document.querySelector('.control-panel__item[data-home="' + spaceKey + '"]');
+      if (item) item.classList.add('is-active');
+      sticker.style.display = '';
+      sticker.style.setProperty('--sc', sp.color);
+      sticker.textContent = sp.code;
+      ol.innerHTML = '<li><a href="#" data-home="' + spaceKey + '">' + sp.name + '</a>' + SEP
+        + '</li><li aria-current="page">' + (section === 'files' ? 'Files' : 'Content') + '</li>';
+      var rows = (section === 'files' ? FILES_ROWS : CONTENT_ROWS).filter(function (r) { return r.space === spaceKey; });
+      renderSection(section, rows);
+    }
+    function openSection(sectionKey) {
+      document.body.classList.remove('in-space', 'is-home');
+      document.body.classList.add('no-browse');
+      document.querySelectorAll('.control-panel__item.is-active').forEach(function (el) { el.classList.remove('is-active'); });
+      var item = document.querySelector('.control-panel__item[data-section="' + sectionKey + '"]');
+      if (item) item.classList.add('is-active');
+      sticker.style.display = 'none';
+      ol.innerHTML = '<li aria-current="page">' + (sectionKey === 'files' ? 'Files' : 'Content') + '</li>';
+      renderSection(sectionKey);
+    }
+    // Top bar depends on the mode (NOT on the Browse-panel selection):
+    //  • Aggregated view (side menu = Products/Content/Files; NOT body.in-space)
+    //    → a fixed app title ("Products"). It is a cross-space aggregated view,
+    //    so Browse-panel interactions never change the top bar.
+    //  • Inside a space (body.in-space, set when a Data Set interaction marks a
+    //    space in the side menu) → the space-rooted breadcrumb.
+    function renderTopBar(label) {
+      var v = VIEWS[label];
+      if (document.body.classList.contains('in-space') && v.space) {
+        buildCrumb(ol, sticker, v);            // space breadcrumb in the top bar
+      } else {
+        sticker.style.display = 'none';
+        ol.innerHTML = '<li aria-current="page">Products</li>';   // aggregated title
+      }
+    }
+    // Data-set header breadcrumb — shown only in the aggregated view (CSS hides
+    // .pim-crumbbar inside a space). It reflects the Browse-panel selection and,
+    // when a space crumb is clicked, navigates the side menu to that space.
+    function renderDataSetHeader(label) {
+      if (document.body.classList.contains('in-space')) return; // hidden by CSS
+      buildCrumb(dsOl, dsSticker, VIEWS[label]);
+    }
+
+    // Reveal a row in the tree by expanding all of its ancestor groups.
+    function expandAncestors(row) {
+      var group = row.closest('ul[role="group"]');
+      while (group) {
+        group.hidden = false;
+        var item = group.closest('[role="treeitem"]');
+        if (!item) break;
+        item.setAttribute('aria-expanded', 'true');
+        var tgl = item.querySelector(':scope > .tree__row > .tree__toggle');
+        if (tgl) {
+          var use = tgl.querySelector('use');
+          if (use) use.setAttribute('href', '#caret-bottom');
+          tgl.setAttribute('aria-label', 'Collapse');
+        }
+        group = item.closest('ul[role="group"]');
+      }
+    }
+    // The single navigation entry point, shared by the tree, the top-bar
+    // breadcrumb and the Data Set rows — so navigation behaves identically
+    // whether or not the Browse panel is visible. `label` is a VIEWS key.
+    // The side menu is the app's primary navigator (Content/Files rely on it
+    // and have no Browse panel). Its active item always reflects WHERE you are:
+    // the aggregated "Products" (ASSETS) when at All Products, or the matching
+    // SPACES item when inside a space or one of its products.
+    function clearSidebarActive() {
+      document.querySelectorAll('.control-panel__item.is-active').forEach(function (el) { el.classList.remove('is-active'); });
+    }
+    function setSidebarActive(v) {
+      // Inside a space → no Browse panel (space home / roots). Aggregated
+      // Products → Browse panel available.
+      document.body.classList.toggle('in-space', !!v.space);
+      clearSidebarActive();
+      var sel = v.space ? '[data-home="' + v.space + '"]' : '[data-nav="All Products"]';
+      var item = document.querySelector('.control-panel__item' + sel);
+      if (item) item.classList.add('is-active');
+    }
+
+    // A space HOME (widgets). Reached from a SPACES side-menu item or the space
+    // crumb. No Browse panel; the top bar shows just the space name.
+    var homeSpaceName = null, homeSpaceKey = null;
+    function showHome(spaceKey) {
+      var sp = SPACES[spaceKey];
+      if (!sp) return;
+      current = null;
+      homeSpaceName = sp.name;
+      homeSpaceKey = spaceKey;
+      document.body.classList.remove('no-browse');
+      document.body.classList.add('in-space');
+      document.body.classList.add('is-home');
+      clearSidebarActive();
+      var item = document.querySelector('.control-panel__item[data-home="' + spaceKey + '"]');
+      if (item) item.classList.add('is-active');
+      // Top bar breadcrumb = just the space (current) — no repeated title in the home.
+      sticker.style.display = '';
+      sticker.style.setProperty('--sc', sp.color);
+      sticker.textContent = sp.code;
+      ol.innerHTML = '<li aria-current="page">' + sp.name + '</li>';
+      // Per-space widget content (reuses the Products / Content / Files data).
+      var prods = (VIEWS[sp.name] && VIEWS[sp.name].products) || [];
+      var content = CONTENT_ROWS.filter(function (r) { return r.space === spaceKey; });
+      var files = FILES_ROWS.filter(function (r) { return r.space === spaceKey; });
+      var owner = prods.length ? PRODUCTS[prods[0]].author : '';
+      document.getElementById('home-products').innerHTML = prods.map(homeProductRow).join('');
+      document.getElementById('home-content').innerHTML = content.map(homeContentRow).join('');
+      document.getElementById('home-files-list').innerHTML = files.map(homeFileCard).join('');
+      document.getElementById('home-members').innerHTML = homeMemberRow(owner);
+    }
+
+    var current = 'All Products';
+    // Command the Data Set + its top-bar breadcrumb + the Browse-tree active
+    // node. This is ALL the Browse panel does — it is the master of the Data
+    // Set and must NOT move the side-menu active item.
+    function render(label) {
+      var v = VIEWS[label];
+      if (!v) return;
+      document.body.classList.remove('no-browse');   // Products views can have the Browse panel
+      document.body.classList.remove('is-home');      // …and are never the space home
+      current = label;
+      tree.querySelectorAll('.tree__row.is-active').forEach(function (r) { r.classList.remove('is-active'); });
+      var row = tree.querySelector('.tree__row[data-crumb="' + label + '"]');
+      if (row) { row.classList.add('is-active'); expandAncestors(row); }
+      renderView(label);
+      renderTopBar(label);
+      renderDataSetHeader(label);
+    }
+    // Full navigation = move the side-menu active item + mode (in-space) FIRST,
+    // then render so the top bar picks the right mode. Used by the paths that
+    // truly "navigate" the app: the Data Set rows, the breadcrumb, the side menu.
+    function navigate(label) {
+      var v = VIEWS[label];
+      if (!v) return;
+      setSidebarActive(v);
+      render(label);
+    }
+
+    // Caret toggles expand/collapse of the child group only.
+    tree.querySelectorAll('.tree__toggle:not(.tree__toggle--placeholder)').forEach(function (toggle) {
+      toggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var item = toggle.closest('[role="treeitem"]');
+        var group = item && item.querySelector(':scope > ul[role="group"]');
+        var expanded = item.getAttribute('aria-expanded') === 'true';
+        item.setAttribute('aria-expanded', String(!expanded));
+        if (group) group.hidden = expanded;
+        var use = toggle.querySelector('use');
+        if (use) use.setAttribute('href', expanded ? '#caret-right' : '#caret-bottom');
+        toggle.setAttribute('aria-label', expanded ? 'Expand' : 'Collapse');
+      });
+    });
+
+    // 1) Browse tree — master of the Data Set ONLY: selecting a node commands
+    //    the Data Set + breadcrumb but does NOT move the side-menu active item.
+    tree.querySelectorAll('.tree__row').forEach(function (row) {
+      row.addEventListener('click', function () { render(row.getAttribute('data-crumb')); });
+    });
+
+    // 2) Data Set rows — any click on a Parent-Product row navigates into its
+    //    space (from the global All Products list) or into the product itself
+    //    (once already inside a space). Clicks on the checkbox / action buttons
+    //    are ignored. SKU rows are leaves (no navigation).
+    tableWrap.addEventListener('click', function (e) {
+      if (e.target.closest('.checkbox') || e.target.closest('button')) return;
+      var tr = e.target.closest('tr[data-product]');
+      if (!tr) return;
+      e.preventDefault();
+      var prod = tr.getAttribute('data-product');
+      var atGlobal = !VIEWS[current] || !VIEWS[current].space;
+      navigate(atGlobal ? SPACES[PRODUCTS[prod].space].name : prod);
+    });
+
+    // 3) Breadcrumb clicks — both the data-set header (aggregated) and the
+    //    top-bar breadcrumb (in a space) navigate the side menu to a space.
+    function crumbClick(e) {
+      var a = e.target.closest('a[data-nav], a[data-home]');
+      if (!a) return;
+      e.preventDefault();
+      if (a.dataset.home) showHome(a.dataset.home);
+      else navigate(a.dataset.nav);
+    }
+    ol.addEventListener('click', crumbClick);
+    dsOl.addEventListener('click', crumbClick);
+
+    // 4) Side menu — the primary navigator (works with the Browse panel
+    //    collapsed and mirrors how Content/Files navigate). ASSETS > Products
+    //    is the aggregated All Products; each SPACES item is that space.
+    document.querySelectorAll('.control-panel__item[data-nav]').forEach(function (item) {
+      item.addEventListener('click', function () { navigate(item.getAttribute('data-nav')); });
+    });
+    // ASSETS › Content / Files → aggregated section views (no Browse panel).
+    document.querySelectorAll('.control-panel__item[data-section]').forEach(function (item) {
+      item.addEventListener('click', function () { openSection(item.getAttribute('data-section')); });
+    });
+    // SPACES › a space → that space's HOME (widgets, no Browse panel).
+    document.querySelectorAll('.control-panel__item[data-home]').forEach(function (item) {
+      item.addEventListener('click', function () { showHome(item.getAttribute('data-home')); });
+    });
+    // Home "View all …" → that space's Products / Content / Files root.
+    var viewProducts = document.getElementById('home-view-products');
+    if (viewProducts) viewProducts.addEventListener('click', function (e) { e.preventDefault(); if (homeSpaceName) navigate(homeSpaceName); });
+    var viewContent = document.getElementById('home-view-content');
+    if (viewContent) viewContent.addEventListener('click', function (e) { e.preventDefault(); if (homeSpaceKey) openSpaceSection(homeSpaceKey, 'content'); });
+    var viewFiles = document.getElementById('home-view-files');
+    if (viewFiles) viewFiles.addEventListener('click', function (e) { e.preventDefault(); if (homeSpaceKey) openSpaceSection(homeSpaceKey, 'files'); });
+
+    // Land on the aggregated Products view (ASSETS > Products active).
+    navigate('All Products');
+  })();
+</script>
+
+<!-- Dark / Light switch (persists under vanilla-skin) -->
+<script>
+  (function () {
+    var SKINS = ['light', 'light-hc', 'dark', 'dark-hc'];
+    var btn = document.getElementById('theme-toggle');
+    var icon = document.getElementById('theme-icon');
+    if (!btn) return;
+    function current() { try { return localStorage.getItem('vanilla-skin') || 'light'; } catch (e) { return 'light'; } }
+    function render() {
+      var isDark = current().indexOf('dark') === 0;
+      var use = icon.querySelector('use');
+      if (use) use.setAttribute('href', isDark ? '#sun' : '#moon');
+      var label = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+      btn.setAttribute('aria-label', label);
+      btn.setAttribute('aria-pressed', String(isDark));
+    }
+    btn.addEventListener('click', function () {
+      var next = current().indexOf('dark') === 0 ? 'light' : 'dark';
+      var r = document.documentElement;
+      SKINS.forEach(function (c) { r.classList.remove(c); });
+      r.classList.add(next);
+      try { localStorage.setItem('vanilla-skin', next); } catch (e) {}
+      render();
+    });
+    render();
+  })();
+</script>
+
+<!-- Scroll shadow on the panel header while the nav list is clipped -->
+<script>
+  (function () {
+    var panel = document.getElementById('control-panel');
+    var body = panel && panel.querySelector('.control-panel__body');
+    if (!body) return;
+    function update() { panel.classList.toggle('is-clipped-top', body.scrollTop > 1); }
+    body.addEventListener('scroll', update, { passive: true });
+    update();
+  })();
+</script>
+
+</body>
+</html>
